@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="utf-8" />
+    <title>Magento &amp; Varnish: Ajax vs. ESI | Fabrizio Branca</title>
+    <meta name="generator" content="GravCMS" />
+<meta name="description" content="Web Development" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="icon" type="image/png" href="http://fbrnc.net/user/themes/antimatter/images/favicon.png" />
+    <link rel="canonical" href="magento-varnish-ajax-vs-esi.html" />
+
+                                                            
+                        <link href="../../../assets/69aec95887701d23e4d88f5cc08d450b.css@g-db0a965f.css" type="text/css" rel="stylesheet" />
+
+
+                                                                            <script src="../../../assets/0ce5b591987de495cd9ba62b91568c73.js@g-db0a965f" type="text/javascript" ></script>
+
+
+</head>
+<body id="top" class="">
+    <div id="sb-site">
+                <header id="header">
+
+            <div id="logo">
+                <h3><a href="../../../index.html"><span class="firstline">Fabrizio</span><span class="secondline">Branca
+            </div>
+            <div id="navbar">
+                                                
+<ul class="navigation">
+                                    <li class="active">
+                <a href="../../../index.html">
+                                        Blog
+                </a>
+            </li>
+                                <li class="">
+                <a href="../../../privacy-policy.html">
+                                        Privacy Policy
+                </a>
+            </li>
+                                <li class="">
+                <a href="../../../contact.html">
+                                        Contact
+                </a>
+            </li>
+                    </ul>
+
+                                <span class="panel-activation sb-toggle-left navbar-left menu-btn fa fa-bars"></span>
+            </div>
+
+        </header>
+        
+        
+                <section id="body" class="">
+            					
+<div id="breadcrumbs" itemscope itemtype="http://data-vocabulary.org/Breadcrumb">
+                            <a href="../../../index.html" itemprop="url"><span itemprop="title">Blog</span></a>
+            <i class="fa fa-angle-right"></i>
+                                <a href="http://fbrnc.net/blog/2011" itemprop="url"><span itemprop="title">2011</span></a>
+            <i class="fa fa-angle-right"></i>
+                                <a href="http://fbrnc.net/blog/2011/05" itemprop="url"><span itemprop="title">05</span></a>
+            <i class="fa fa-angle-right"></i>
+                                                <span itemprop="title">Magento & Varnish: Ajax vs. ESI</span>
+                        </div>
+				
+		<div class="blog-content-item grid pure-g-r">
+			<div id="item" class="block pure-u-2-3">
+ 			    <div class="list-item">
+
+    <div class="list-blog-header">
+        <span class="list-blog-date">
+            <span>25 May</span>
+            <em>2011</em>
+        </span>
+        <h2><a href="magento-varnish-ajax-vs-esi.html" class="post-title">Magento & Varnish: Ajax vs. ESI</a></h2>
+                <span class="tags">
+                        <a href="../../../tag%253AMagento.html">Magento</a>
+                        <a href="../../../tag%253ADevelopment.html">Development</a>
+                        <a href="../../../tag%253ACaching.html">Caching</a>
+                        <a href="../../../tag%253AVarnish.html">Varnish</a>
+                    </span>
+                
+    </div>
+
+    <div class="list-blog-padding">
+            <p><p>I got a lot of feedback on my Magento &amp; Varnish prototype, both after my last week's <a href="http://www.meet-magento.de/programm/fabrizio-branca-programm-meet-magento-511.html">talk at the Meet Magento 5.11 in Leipzig</a> (see <a href="../../../meet-magento-5-2011-performance-durch-caching.html">slides</a>) and today after publishing an <a href="../../../make-your-magento-store-fly-using-varnish.html">article explaining the concept</a>, publishing the <a href="https://github.com/fbrnc">modules on GitHub</a> and setting up a <a href="http://varnish.demo.aoemedia.de/">demo store</a>. </p>
+<p>Most of them are "<em>wow, that's cool</em>", others are "<em>have a look at my (commercial) product/service that does the same, (only better)</em>" and some are "<em>interesting, but why didn't you...?</em>"</p>
+<p>As Twitter does not feel to be the right medium to discuss things I'll try to answer some questions or respond to your comments here:</p>
+<h3>Numbers in the speed benchmark</h3>
+<p>As stated in the <a href="../../../make-your-magento-store-fly-using-varnish.html">original article</a>, you shouldn't take the results of my (and any other's) speed benchmarks too serious. Feeding siege with the urls of the Magento's Google Sitemap means testing only pages that can be cached. To have better results you should test real user behavior including checkout processes, editing personal data in "My Account" and other dynamic processes. If you have an individual product configurator on your page this might be much more interesting than testing how much pages can be delivered from the Varnish Cache.<br />
+Besides that siege of course does not simulate the Ajax requests to the server fetching the dynamic parts, that might take longer than the rest of the page (but still less long, than having Magento generate the complete page).<br />
+On the other hand this time is still somehow representative, because the user will get most of the content after the first static request and probably won't notice that the menu and the sidebar might slightly change after some more milliseconds.</p>
+<h3>Why aren't you using ESI instead of Ajax requests?</h3>
+<p>Varnish can process Edge Side Includes (<a href="http://www.w3.org/TR/esi-lang">"ESI", defined by W3C</a> almost 10 years ago). That means that the will be parsed for <esi:include src="..." /> tags and those tags will be replaced by the content of the defined url, either from the Varnish cache or from the backend (Magento in our case). The advantage is, that you can assemble the final output from various parts that can have different lifetimes or aren't cached at all.<br />
+I could insert the individual menu and the dynamic blocks in the right sidebar into the layout using ESI includes. The client would not need to make an Ajax request to the server to fetch those dynamic parts.</p>
+<p>While Varnish processes those ESI includes very efficiently and fast this method also has some drawbacks:</p>
+<ul>
+<li>ESI has some problems with <strong>compressed content</strong> from the backend. (Somebody said this might be fixed with the upcoming version 3 of Varnish).</li>
+<li>Varnish is <strong>not able to pass a cookie</strong> (including the session information) or any other http header data from a part that is included by ESI to the final output. That makes it difficult to create session, that for example is needed for the "recently viewed products" functionality, the checkout or any other user-specific Magento features.</li>
+<li>Processing ESI includes might be fast, but it is still <strong>slower than not processing any includes at all</strong>. Additionally the parts that might be included will probably be so individual that they would always be passed to Magento without being cached. That will <strong>hold Varnish back from delivering the complete page</strong> until all ESI requests (that might be more than one) have returned their response.</li>
+<li>Inserting dynamic content via Ajax has the advantage that you can request all parts with <strong>one single request</strong> instead of bootstrapping Magento for every part like it would be needed using ESI.</li>
+<li>The Ajax request additionally gives you the opportunity to <strong>transfer some more information from the client to the server</strong> like the id of the product that is currently visited. This information is needed for the "recently viewed products" function.</li>
+<li><strong>Keep it simple, stupid!</strong> I wanted to create a simple and lightweight solution without any side effects. Having Varnish doing much more than what it does best (reliably delivering pages, fast) by assembling the final page in a layer between Magento and the clients somehow feels wrong and increases complexity.</li>
+<li>And last but not least: My approach is to <strong>deliver most content of most pages as fast as possible</strong>. That's why I'd rather have the page send to the browser containing some placeholders (and you might let them look unobtrusive so that the user might not notice that there is something missing there) very fast. The focus of the user anyways might by the main content part that will be already visible after the first request.</li>
+</ul>
+<h3>I'd like to have this on my shop, what do I need to do?</h3>
+<p>Basically it is no big deal and everything can be setup within minutes... </p>
+<p>...on a default store. But your store probably is very individual! </p>
+<p>First you need to analyze all pages from your store and find out which pages aren't static at all (like the checkout process) and which pages are mostly or completely static (like the product single views or the category listing as long as you don't have stock counters or other data on there that needs to be update at every moment). Then replace those dynamic parts as described in my previous blog post. If you need cache content to be invalidated on special events (like stock data) you need to think of a way to send purge commands to Varnish in order to remove them from the Varnish's cache.</p>
+<p>Then setup Varnish (and if you need encryption then also setup nginx in front of Varnish). Take a lot of time for testing and adoptions to your Magento store and to the Varnish configuration (you'll find <a href="https://github.com/fbrnc/Aoe_Static/blob/master/default.vcl">my configuration in the Aoe_Static project on GitHub</a>) and configure Varnish to listen to port 80 and Apache to listen to another port (or bind both to IP-Addresses). Then decide if you want Varnish to also cache some resources (js, css, images,...) keeping in mind that it costs much more to ask Magento for a page that might have been swapped out of the cache than grabbing a file from the file system.</p>
+<p>It sounds easy, but it will probably take some time and involves digging into Magento, Varnish and your Browser. Keep an eye on the request headers at every point in time and use the <a href="http://www.varnish-cache.org/docs/2.1/reference/index.html">tools provided by Varnish</a> to check if everything works fine. </p>
+<h3>Contributions</h3>
+<p>Since I published my modules on <a href="https://github.com/fbrnc">GitHub</a> I got some code contributions. Thanks a lot for that and feel free to dig into my code, send me patches, pull requests or any other suggestions or questions.<br />
+Any feedback and contributions are very welcome!<br />
+<strong>That's what makes my day after spending the nights writing long blog posts :)</strong></p></p>
+
+        <div class="share">
+            <span>Share via: </span>
+            <ul>
+                <li><a target="_blank" href="https://twitter.com/home?status=Magento%20%26%20Varnish%3A%20Ajax%20vs.%20ESI%20http%3A%2F%2Ffbrnc.net%2Fblog%2F2011%2F05%2Fmagento-varnish-ajax-vs-esi%20%2Fvia%20%40fbrnc">Twitter</a></li>
+                <li><a target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=http%3A%2F%2Ffbrnc.net%2Fblog%2F2011%2F05%2Fmagento-varnish-ajax-vs-esi">Facebook</a></li>
+                <li><a target="_blank" href="https://plus.google.com/share?url=http%3A%2F%2Ffbrnc.net%2Fblog%2F2011%2F05%2Fmagento-varnish-ajax-vs-esi">Google+</a></li>
+                <li><a target="_blank" href="mailto:?subject=Reading Recommendation&amp;body=Check out this article: Magento & Varnish: Ajax vs. ESI http%3A%2F%2Ffbrnc.net%2Fblog%2F2011%2F05%2Fmagento-varnish-ajax-vs-esi by Fabrizio Branca .">Mail</a></li>
+            </ul>
+        </div>
+
+        <h4>Comments</h4>
+        <div class="enable_comments_notice">
+            <p>This website uses <a href="https://disqus.com">disqus</a> for the commenting functionality. In order to protect your privacy comments are <em>disabled by default</em>.</p>
+            <a id="enable_comments" href="magento-varnish-ajax-vs-esi.html#">Enable Comments</a>
+        </div>
+        <div id="disqus_thread"></div>
+        <script type="text/javascript">
+            var disqus_shortname = 'fbrnc';
+                        var disqus_identifier = 'pages_2352';
+                    </script>
+
+    
+    </div>
+
+</div>
+			</div>
+			<div id="sidebar" class="block size-1-3 pure-u-1-3">
+				<div class="sidebar-content profile">
+    <div class="profile-image">
+        <img src="../../../user/themes/antimatter/images/fabrizio_polaroid.png" alt="Fabrizio Branca"/>
+    </div>
+    <div class="profile-content">
+        <p><strong>Hi, I'm Fabrizio!</strong></p>
+        <p>I'm a web developer from San Francisco, CA and I work for <a href="http://www.aoe.com">AOE</a>.</p>
+        <p>Follow me on <a href="https://twitter.com/fbrnc">Twitter</a> or check out my stuff on <a href="https://github.com/fbrnc">GitHub</a>.</p>
+            </div>
+</div>
+<div class="sidebar-content sidebar-certifications">
+    <h4>Certifications</h4>
+    <ul>
+        <li>
+            <img src="../../../user/themes/antimatter/images/cert/Solutions-Architect-Associate.png" alt="AWS Certified Solutions Architect - Associate"/>
+        </li>
+        <li>
+            <img src="../../../user/themes/antimatter/images/cert/Developer-Associate.png" alt="AWS Certified Developer - Associate"/>
+        </li>
+        <li>
+            <img src="../../../user/themes/antimatter/images/cert/SysOps-Administrator-Associate.png" alt="AWS Certified SysOps Administrator - Associate"/>
+        </li>
+        <li>
+            <a href="https://magento.com/blog/magento-news/meet-2016-magento-masters-mentors">
+                <img src="../../../user/themes/antimatter/images/cert/magento_master_2016.png" alt="Magento Masters 2016"/>
+            </a>
+        </li>
+        <li>
+            <a href="http://www.magentocommerce.com/certification/directory/dev/65753/">
+                <img src="../../../user/themes/antimatter/images/cert/magento_certified_developer_plus.png" alt="Magento Certified Developer Plus"/>
+            </a>
+        </li>
+        <li>
+            <a href="http://www.magentocommerce.com/certification/directory/dev/65753/">
+                <img src="../../../user/themes/antimatter/images/cert/frontend_developer.png" alt="Magento Certified Frontend Developer"/>
+            </a>
+        </li>
+        <li>
+            <a href="http://typo3.org/certification/about-the-certification/certified-typo3-cms-integrator-listing/show/branca-fabrizio/">
+                <img src="../../../user/themes/antimatter/images/cert/TYPO3-Certified-Integrator-black-140.png" alt="TYPO3 Certified Integrator"/>
+            </a>
+        </li>
+        <li>
+            <a href="http://www.zend.com/en/services/certification/zend-certified-engineer-directory#ClientCandidateID=ZEND009995&cid=0">
+                <img src="../../../user/themes/antimatter/images/cert/php5_zce_logo_new.gif" alt="Zend Certified Engineer"/>
+            </a>
+        </li>
+    </ul>
+</div>
+<div class="sidebar-content sidebar-tags">
+    <h4>Popular Tags</h4>
+    
+<span class="tags">
+                    <a class="" href="../../../tag%253AGallery.html">Gallery</a>
+                    <a class="" href="../../../tag%253AMagento.html">Magento</a>
+                    <a class="" href="../../../tag%253ADevelopment.html">Development</a>
+                    <a class="" href="../../../tag%253ATYPO3.html">TYPO3</a>
+                    <a class="" href="../../../tag%253APhotography.html">Photography</a>
+                    <a class="" href="../../../tag%253ASonstiges.html">Sonstiges</a>
+                    <a class="" href="../../../tag%253A30&#32;day&#32;photo&#32;challenge.html">30 day photo challenge</a>
+                    <a class="" href="../../../tag%253APfadfinder.html">Pfadfinder</a>
+                    <a class="" href="../../../tag%253ACaching.html">Caching</a>
+                    <a class="" href="../../../tag%253AAWS.html">AWS</a>
+                    <a class="" href="http://fbrnc.net/tag:Flash/Actionscript">Flash/Actionscript</a>
+                    <a class="" href="../../../tag%253APortfolio.html">Portfolio</a>
+                    <a class="" href="../../../tag%253ACloudFormation.html">CloudFormation</a>
+                    <a class="" href="../../../tag%253AVarnish.html">Varnish</a>
+                    <a class="" href="../../../tag%253ALambda.html">Lambda</a>
+                    <a class="" href="../../../tag%253AHome.html">Home</a>
+                    <a class="" href="../../../tag%253ABücher.html">Bücher</a>
+                    <a class="" href="../../../tag%253APresentation.html">Presentation</a>
+                    <a class="" href="../../../tag%253ADesign.html">Design</a>
+                    <a class="" href="../../../tag%253AOpen&#32;Source.html">Open Source</a>
+                    <a class="" href="../../../tag%253AStudium.html">Studium</a>
+                    <a class="" href="../../../tag%253ADeployment.html">Deployment</a>
+                    <a class="" href="../../../tag%253AOpsWorks.html">OpsWorks</a>
+                    <a class="" href="../../../tag%253AMeetup.html">Meetup</a>
+                    <a class="" href="../../../tag%253AKISS.html">KISS</a>
+                    <a class="" href="../../../tag%253ASNS.html">SNS</a>
+                    <a class="" href="../../../tag%253AMicroservices.html">Microservices</a>
+                    <a class="" href="../../../tag%253AArchitecture.html">Architecture</a>
+                    <a class="" href="../../../tag%253AKinesis.html">Kinesis</a>
+                    <a class="" href="../../../tag%253ASQS.html">SQS</a>
+                    <a class="" href="../../../tag%253AWorkflow.html">Workflow</a>
+                    <a class="" href="../../../tag%253AJMeter.html">JMeter</a>
+                    <a class="" href="../../../tag%253AGrav.html">Grav</a>
+                    <a class="" href="../../../tag%253AInfrastructure&#32;as&#32;Code.html">Infrastructure as Code</a>
+                    <a class="" href="../../../tag%253ADevOps.html">DevOps</a>
+                    <a class="" href="../../../tag%253AVideos.html">Videos</a>
+                    <a class="" href="../../../tag%253ALightroom.html">Lightroom</a>
+                    <a class="" href="../../../tag%253AScaling.html">Scaling</a>
+                    <a class="" href="../../../tag%253ATricks.html">Tricks</a>
+                    <a class="" href="../../../tag%253AMPMD.html">MPMD</a>
+                    <a class="" href="../../../tag%253ACache.html">Cache</a>
+                    <a class="" href="../../../tag%253ACMS.html">CMS</a>
+                    <a class="" href="../../../tag%253APerformance.html">Performance</a>
+                    <a class="" href="../../../tag%253AGit.html">Git</a>
+    </span>
+</div>
+<div class="sidebar-content sidebar-archives">
+    <h4>Archives</h4>
+	<ul class="archives">
+
+
+                    </ul><ul class="archives">
+        <li class="caption">2016</li>
+        <li>
+        <a href="../../../month%253Amay_2016.html" title="May 2016">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2016.html" title="March 2016">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajan_2016.html" title="January 2016">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2015</li>
+        <li>
+        <a href="../../../month%253Aoct_2015.html" title="October 2015">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2015.html" title="June 2015">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2015.html" title="April 2015">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2014</li>
+        <li>
+        <a href="../../../month%253Adec_2014.html" title="December 2014">
+                <span class="label">5</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2014.html" title="November 2014">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2014.html" title="May 2014">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2014.html" title="March 2014">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2014.html" title="February 2014">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2013</li>
+        <li>
+        <a href="../../../month%253Adec_2013.html" title="December 2013">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2013.html" title="August 2013">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2013.html" title="July 2013">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2013.html" title="May 2013">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2013.html" title="April 2013">
+                <span class="label">10</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2013.html" title="March 2013">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2013.html" title="February 2013">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2012</li>
+        <li>
+        <a href="../../../month%253Adec_2012.html" title="December 2012">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2012.html" title="November 2012">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2012.html" title="October 2012">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2012.html" title="September 2012">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2012.html" title="August 2012">
+                <span class="label">7</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2012.html" title="July 2012">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2012.html" title="June 2012">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2012.html" title="May 2012">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2012.html" title="April 2012">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2012.html" title="March 2012">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2012.html" title="February 2012">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2011</li>
+        <li>
+        <a href="../../../month%253Adec_2011.html" title="December 2011">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2011.html" title="November 2011">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2011.html" title="October 2011">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2011.html" title="September 2011">
+                <span class="label">17</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2011.html" title="August 2011">
+                <span class="label">26</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2011.html" title="July 2011">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2011.html" title="June 2011">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2011.html" title="May 2011">
+                <span class="label">9</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2011.html" title="April 2011">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2011.html" title="March 2011">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2011.html" title="February 2011">
+                <span class="label">9</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2010</li>
+        <li>
+        <a href="../../../month%253Adec_2010.html" title="December 2010">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2010.html" title="October 2010">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2010.html" title="August 2010">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2010.html" title="July 2010">
+                <span class="label">6</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2010.html" title="June 2010">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2010.html" title="April 2010">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2010.html" title="March 2010">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2010.html" title="February 2010">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2009</li>
+        <li>
+        <a href="../../../month%253Adec_2009.html" title="December 2009">
+                <span class="label">7</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2009.html" title="November 2009">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2009.html" title="October 2009">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2009.html" title="September 2009">
+                <span class="label">6</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2009.html" title="August 2009">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2009.html" title="July 2009">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2009.html" title="June 2009">
+                <span class="label">5</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2009.html" title="May 2009">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2009.html" title="February 2009">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajan_2009.html" title="January 2009">
+                <span class="label">5</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2008</li>
+        <li>
+        <a href="../../../month%253Adec_2008.html" title="December 2008">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2008.html" title="November 2008">
+                <span class="label">11</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2008.html" title="August 2008">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2008.html" title="May 2008">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2008.html" title="April 2008">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2008.html" title="March 2008">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2008.html" title="February 2008">
+                <span class="label">7</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajan_2008.html" title="January 2008">
+                <span class="label">10</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2007</li>
+        <li>
+        <a href="../../../month%253Adec_2007.html" title="December 2007">
+                <span class="label">25</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2007.html" title="November 2007">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2007.html" title="October 2007">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2007.html" title="September 2007">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2007.html" title="June 2007">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2007.html" title="May 2007">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2007.html" title="February 2007">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajan_2007.html" title="January 2007">
+                <span class="label">7</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2006</li>
+        <li>
+        <a href="../../../month%253Adec_2006.html" title="December 2006">
+                <span class="label">5</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2006.html" title="November 2006">
+                <span class="label">14</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2006.html" title="October 2006">
+                <span class="label">9</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2006.html" title="September 2006">
+                <span class="label">7</span>
+                </a>
+    </li>
+</ul>
+</div>
+			</div>
+		</div>
+	
+                                    
+        </section>
+        
+                <footer id="footer">
+            <div class="totop">
+                <span><a href="magento-varnish-ajax-vs-esi.html#" id="toTop"><i class="fa fa-arrow-up"></i></a></span>
+            </div>
+            <p>Powered by <a href="http://getgrav.org">Grav</a>.</p>
+            <p>
+                <a href="../../../blog.atom.html"><i class="fa fa-rss-square"></i> Atom 1.0</a> |
+                <a href="../../../blog.rss.html"><i class="fa fa-rss-square"></i> RSS</a> |
+                <a href="http://fbrnc.net/sitemap">Sitemap</a>
+            </p>
+        </footer>
+            </div>
+    <div class="sb-slidebar sb-left sb-width-thin">
+        <div id="panel">
+        
+<ul class="navigation">
+                                    <li class="active">
+                <a href="../../../index.html">
+                                        Blog
+                </a>
+            </li>
+                                <li class="">
+                <a href="../../../privacy-policy.html">
+                                        Privacy Policy
+                </a>
+            </li>
+                                <li class="">
+                <a href="../../../contact.html">
+                                        Contact
+                </a>
+            </li>
+                    </ul>
+
+        </div>
+    </div>
+            
+        <script>
+        $(function () {
+            $(document).ready(function() {
+              $.slidebars({
+                hideControlClasses: true,
+                scrollLock: true
+              });
+            });
+        });
+        </script>
+    </body>
+</html>
+<!-- Generated: 2016-07-24T07:51:48+02:00 -->

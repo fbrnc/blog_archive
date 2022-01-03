@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="utf-8" />
+    <title>Magento for TYPO3 developers | Fabrizio Branca</title>
+    <meta name="generator" content="GravCMS" />
+<meta name="description" content="Web Development" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="icon" type="image/png" href="http://fbrnc.net/user/themes/antimatter/images/favicon.png" />
+    <link rel="canonical" href="magento-for-typo3-developers.html" />
+
+                                                            
+                        <link href="../../../assets/69aec95887701d23e4d88f5cc08d450b.css@g-db0a965f.css" type="text/css" rel="stylesheet" />
+
+
+                                                                            <script src="../../../assets/0ce5b591987de495cd9ba62b91568c73.js@g-db0a965f" type="text/javascript" ></script>
+
+
+</head>
+<body id="top" class="">
+    <div id="sb-site">
+                <header id="header">
+
+            <div id="logo">
+                <h3><a href="../../../index.html"><span class="firstline">Fabrizio</span><span class="secondline">Branca
+            </div>
+            <div id="navbar">
+                                                
+<ul class="navigation">
+                                    <li class="active">
+                <a href="../../../index.html">
+                                        Blog
+                </a>
+            </li>
+                                <li class="">
+                <a href="../../../privacy-policy.html">
+                                        Privacy Policy
+                </a>
+            </li>
+                                <li class="">
+                <a href="../../../contact.html">
+                                        Contact
+                </a>
+            </li>
+                    </ul>
+
+                                <span class="panel-activation sb-toggle-left navbar-left menu-btn fa fa-bars"></span>
+            </div>
+
+        </header>
+        
+        
+                <section id="body" class="">
+            					
+<div id="breadcrumbs" itemscope itemtype="http://data-vocabulary.org/Breadcrumb">
+                            <a href="../../../index.html" itemprop="url"><span itemprop="title">Blog</span></a>
+            <i class="fa fa-angle-right"></i>
+                                <a href="http://fbrnc.net/blog/2011" itemprop="url"><span itemprop="title">2011</span></a>
+            <i class="fa fa-angle-right"></i>
+                                <a href="http://fbrnc.net/blog/2011/03" itemprop="url"><span itemprop="title">03</span></a>
+            <i class="fa fa-angle-right"></i>
+                                                <span itemprop="title">Magento for TYPO3 developers</span>
+                        </div>
+				
+		<div class="blog-content-item grid pure-g-r">
+			<div id="item" class="block pure-u-2-3">
+ 			    <div class="list-item">
+
+    <div class="list-blog-header">
+        <span class="list-blog-date">
+            <span>07 Mar</span>
+            <em>2011</em>
+        </span>
+        <h2><a href="magento-for-typo3-developers.html" class="post-title">Magento for TYPO3 developers</a></h2>
+                <span class="tags">
+                        <a href="../../../tag%253AMagento.html">Magento</a>
+                        <a href="../../../tag%253ATYPO3.html">TYPO3</a>
+                        <a href="../../../tag%253ADevelopment.html">Development</a>
+                    </span>
+                
+    </div>
+
+    <div class="list-blog-padding">
+            <p><p>When I initially started digging into Magento I experienced the same problem I had with TYPO3 years before: I needed to get to know the basic concepts, before I could productively develop clean stuff based on the system. </p>
+<p>Soon I started to compare Magento concepts to stuff I knew from TYPO3. That made it easier to understand what's going on behind the scenes and what possibilites I have for using those concepts for my customizations and own modules. </p>
+<p>So here is a list (a very uncomplete one) with concepts in Magento compared to TYPO3. </p>
+<h3>Basics</h3>
+<p>Let's begin with some basics. Magento and TYPO3 both are written in PHP and MySQL for storing persistent data. While Magento is based on the Zend Framework, TYPO3 is not based on anything (at least the versions below 5.X), but brings some very handy framework-like functions ready to use in your own extensions. For those of you, who love metrics and numbers: Some time ago I compared TYPO3 to some <a href="../../../comparing-metrics-for-typo3-wordpress-joomla-and-drupal.html">other PHP-based systems</a> and to <a href="http://twitpic.com/23f5fn">Magento aswell</a>. </p>
+<h3>The big picture</h3>
+<p>A big difference between TYPO3 and Magento is, that with Magento you start with a fully working shop, while with TYPO3 you start with a blank page (or even with an error message: "No root template found" :) unless you're using a preconfigured system. </p>
+<p>This reflects directly on the way you work with each of those systems: In Magento you spend a lot of time finding things and customize them, while in TYPO3 you construct your page from scratch. This gives you full control over the output and saves you from digging into and understanding foreign existing code, while on the other hand you'll have to take care of everything by yourself. </p>
+<h3>MVC</h3>
+<p>While Magento's architecture is clearly MVC-based, TYPO3 has something like a front-controller that delievers content and executes plugins based on the page in a pagetree. </p>
+<p>Magento even extends the MVC-pattern by introducing <em>layouts</em> and <em>blocks</em>. There is something similar for both in TYPO3: </p>
+<h3>Layouts = TypoScript Templates</h3>
+<p>Magento's <em>layouts</em> can be roughy compared to TYPO3's <em>templates</em> (the TypoScript templates, not the HTML templates). Usually it's the layouts where you define and configure what will be displayed on the requested page. You can have multiple layout handles to organize stuff based on origin or use case. In TYPO3 this equals to having multiple TypoScript templates, possible placed on different places within the pagetree. </p>
+<p>Layouts enable you to add stuff to the header and to compose the content and other parts on the page. Same with TYPO3. You're also free to modify previously defined settings in other handles. </p>
+<h3>Blocks = Content Elements</h3>
+<p>Magento's view layer consists of <em>blocks</em>. Most blocks are attached to a phtml-template, that actually renderes the output. </p>
+<p>After triggering the model's business logic, the controller passes all needed information to blocks, that are created in the controller or defined in a layout. In TYPO3 a block corresponds to a content element (CE) or even a flexible content element (FCE) in terms of TemplaVoila. A content element can be a simple text element (would be a static cms block in Magento) or a complex frontend plugin (you're free to do whatever you need to do in a block). </p>
+<h3>Templates</h3>
+<p>In Magento phtml are used for templating. So basically it is plain php (where short syntax is used for loops and conditions). The templates are executed within the block context, so you can access the block's data and methods with $this. </p>
+<p>In TYPO3 there are two types of templates. The old way is having text files with ###markers### and subparts. Assembling the final output the is done in PHP by parsing the files. </p>
+<p>The new - much nicer approach - is to use fluid templates. TYPO3's new templating engine <em>Fluid</em> (especially in combination with TYPO3's new MVC-Framework <em>Extbase</em>) is much more powerful and allows you the create clean templates. </p>
+<h3>"core/text_list"-Block = COA</h3>
+<p>There are some special blocks, that are widely used within Magento. One is the _core/text<em>list</em> block that is a container simply displaying its content (other blocks) one after the other.</p>
+<pre><code>&lt;block type="core/text_list" name="content"&gt;
+    &lt;block type="core/text"&gt;
+        &lt;action method="setText"&gt;&lt;param&gt;&lt;![CDATA[Hello]]&gt;&lt;/param&gt;&lt;/action&gt;
+    &lt;/block&gt;    
+    &lt;block type="core/text"&gt;
+        &lt;action method="setText"&gt;&lt;param&gt;&lt;![CDATA[World]]&gt;&lt;/param&gt;&lt;/action&gt;
+    &lt;/block&gt;
+&lt;/block&gt;</code></pre>
+<p>In TYPO3 we have the COA content element ("content object array"):</p>
+<pre><code>lib.content = COA
+lib.content {
+    10 = TEXT
+    10.value = HELLO
+
+    20 = TEXT
+    20.value = WORLD
+}</code></pre>
+<h3>Module = Extension</h3>
+<p>In both systems we have a way to add functionality that can be reused by creating a package. In Magento there are many terms for them (extension, module, package,..) in TYPO3 they're called extensions. Magento's module repository can be found under <a href="http://www.magentocommerce.com/magento-connect">http://www.magentocommerce.com/magento-connect</a>. It uses <a href="http://pear.php.net/">pear</a> as underlying technology to transfer packages. Currently they're working on a new version of Magento connect. </p>
+<p>A much more convenient way to fetch Magento packages for development is <a href="http://www.willcodeforfood.de/">Damian</a>'s <a href="http://connect.get-the-code.de/">http://connect.get-the-code.de/</a>. </p>
+<p>TYPO3 has the <a href="http://typo3.org/extensions/repository/">TYPO3 Extension Repository (TER)</a> and <a href="http://forge.typo3.org">forge.typo3.org</a> for managing, developing and distributing the extensions. </p>
+<p>The biggest difference between Magento and TYPO3 is the way those packages are mixed with the core files: TYPO3 keeps all extensions in special folders (e.g. typo3conf/ext). All files belonging to an extension are in that folder. </p>
+<p>Magento modules spread their files all over the core. This makes it difficult to have clean deployments, reuse modules, develop them or remove them, if you don't have a good strategy on how to setup and manage your stores. The <a href="http://code.google.com/p/module-manager/">module-manager</a> is a good start for a clean project infrastructure. </p>
+<h3>Mage::getUrl = typolink</h3>
+<p>Magento's urls are generated using <em>Mage:getUrl()</em> addressing a controller action while being able to add additional parameters. In TYPO3 all links are generated via <em>typolink</em> (from within TypoScript of from PHP code in your extensions) while addressing a page uid and adding parameters. </p>
+<h3>Caching</h3>
+<p>TYPO3 and Magento both cache some basic stuff, that is reused often like resized images or configurations. </p>
+<p>Both come up with a way to cache the output of your extension. In TYPO3 this is based on the <em>chash</em> that is generated taking the GET-parameters, the logged-in's user's groups and some other parameters (TypoScript conditions,...). In Magento you have the <em>block caching</em> (and in the Enterprise Version you additionally have the <em>Fullpage-Cache</em>, that comes close to the way TYPO3 handles the page caching). </p>
+<p>Block caching differs from TYPO3's page caching a lot. A block is always instantiated, then it is asked for a <em>cache-lifetime</em> and a <em>cache-key</em>. Based on this information Magento decides whether to render to block or look for a cached version. Additionally you can define custom cache tags to have a fine-grained control over what cache entries should be deleted on what event. It's up to you as a module developer to decide what goes into the cache-key, that controls different versions of the block output in the cache. </p>
+<p>Update: TYPO3 4.7 will come with some handy features that will allow fine-grained caching by introducing Magento's block level caching to TYPO3s cObjects. </p>
+<h3>Rewrites = Xclasses</h3>
+<p>In Magento most objects are created using a factory method (e.g. <em>Mage::getModel()</em>). In TYPO3 this is_ t3lib<em>div::makeInstance()</em>. This allows you to add or overwrite functionality of the original class. In Magento this is done using so called <em>rewrites</em>. Additionally there is a "local" folder that has higher priority towards the "community" and "core" code folders. You can simply copy files to the corresponding path in that folder. This is not a nice solution but sometimes the only way to go, if you need to change something in a class that is not directly instantiated (but inherited from). </p>
+<p>In TYPO3 extending classes can be done with a "<em>xclass</em>". </p>
+<h3>translation.csv = locallang.xml</h3>
+<p>With Magento and TYPO3 it's easy to have multilanguage output for your extensions and other parts of the website. Magento handles translations in csv files and TYPO3 uses xml files. In both systems you can always custom overwrite some translations to add more language or to change the wording of some labels. </p>
+<h3>core_config_data = localconf.php / TypoScript / Constants / ext_conf_template.txt</h3>
+<p>In Magento most settings can be changes in the backends <em>System -&gt; Configuration</em> module. They're saved in a database tables called _core_config<em>data</em>. As a module developer you can easyily add settings to this interface. </p>
+<p>In TYPO3 there are several places where to put settings. TYPO3 core settings can be adapted in the <em>install tool</em> and the go into the <em>localconf.php</em> file. Extension specific settings can be defined via _ext_conf<em>template.txt</em> and also go into the localconf.php. For settings affecting the frontend rendering a developer can define constants that can be set via the <em>constant editor</em>. And finally settings can be done directly within the TypoScript templates. </p>
+<h3>app/etc/modules/My_Module.xml = typo3conf/ext/my_module/ext_emconf.php</h3>
+<p>TYPO3 and Magento both have a single file that contains the bare minimum information to let the system know some basic information about the extension or module. </p>
+<p>In Magento a modules registers itself in the app/etc/modules/ folder by adding a xml file containing information on the module namespace and module name (e.g. "My_Module"), on the code pool ("local", "community" or - for core modules - "core"), a flag whether it is active of not and information on dependencies. </p>
+<p>In TYPO3 there is a php file in the extensions's root folder called ext_emconf.php. It contains information like title, description, version number and some other stuff like author information and dependencies to other extensions, php versions or TYPO3 version. </p>
+<h3>app/code/local/My/Module/etc/config.xml = typo3conf/ext/my_module/ext_localconf.php</h3>
+<p>Besides the previously mentioned files for registering the extension, both come with some additional files to configure further features of that module. </p>
+<p>A Magento module's most important file is the config.xml. It's here where modules, blocks, controllers, skin files, templates and many other things are registered. Besides that there are some other *.xml files in that etc folder that are used for configuring and enabling some other functionality of the module. </p>
+<p>TYPO3 comes with the ext_localconf.php (and with ext_tables.php). It's here where most features are enabled, like registering new frontend plugins or backend modules. </p>
+<h3>Events = Hooks</h3>
+<p>Inside Magento an event/observer implementation is widely used. Observers can be easily implemented to extend or modify Magento's default behaviour. Having events dispatched in own modules is also an easy thing to do and highly recommended. </p>
+<p>TYPO3 uses so called "hooks". Basically the concept is the sameand there a plenty of hooks all over the core. The biggest difference is that TYPO3's hooks require you to register your "observer" class or method into a $_GLOBALS variable, which isn't the most elegant implementation of this design pattern.<br />
+Also TYPO3's includes some different ways on how to process hooks. Sometimes you'll specify a class and a predifined method is called and sometimes you can specifiy the full path including your custom method. In the latest version some interfaces were introduced that must be implemented for some hook implementations. </p>
+<p>Extbase (the widespread mvc implementation on top of TYPO3) comes with a <a href="http://blog.tolleiv.de/2011/11/signal-slots-in-extbase/">signal/slot implementation</a> that is much cleaner than TYPO3's hooks. </p>
+<h3>Community</h3>
+<p>This point definetly goes to TYPO3. I consider the Magento more like a "read-only" community. Developers, agencies and customers get some code from Magento, Inc and work with that. Some modules are developed and most of them are sold instead of given away for free. I don't see a spirit of contributing to the Magento core (always assuming there's a simple way to do so). </p>
+<p>With TYPO3 this is very different. There is no commercial company behind TYPO3. Everything contributed to TYPO3 directly is available and belongs to the community. Additionally there a many events like the TYPO3 Snowboard Tour, Developer Days, Code Sprints, Typo3Camps,... that inspire people to meet each other not only on a business level, but also on a fun level. Working with and contributing to TYPO3 feels totally different than Magento. </p>
+<h3>Conclusion</h3>
+<p>So, that's my rough roundup comparing some Magento features to TYPO3 features. While both systems are hard to learn in the beginning, you'll soon learn how to do things in a quick and future-proof way very soon. Both systems have their pros and their cons, but in the end both can be fun to work with. </p></p>
+
+        <div class="share">
+            <span>Share via: </span>
+            <ul>
+                <li><a target="_blank" href="https://twitter.com/home?status=Magento%20for%20TYPO3%20developers%20http%3A%2F%2Ffbrnc.net%2Fblog%2F2011%2F03%2Fmagento-for-typo3-developers%20%2Fvia%20%40fbrnc">Twitter</a></li>
+                <li><a target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=http%3A%2F%2Ffbrnc.net%2Fblog%2F2011%2F03%2Fmagento-for-typo3-developers">Facebook</a></li>
+                <li><a target="_blank" href="https://plus.google.com/share?url=http%3A%2F%2Ffbrnc.net%2Fblog%2F2011%2F03%2Fmagento-for-typo3-developers">Google+</a></li>
+                <li><a target="_blank" href="mailto:?subject=Reading Recommendation&amp;body=Check out this article: Magento for TYPO3 developers http%3A%2F%2Ffbrnc.net%2Fblog%2F2011%2F03%2Fmagento-for-typo3-developers by Fabrizio Branca .">Mail</a></li>
+            </ul>
+        </div>
+
+        <h4>Comments</h4>
+        <div class="enable_comments_notice">
+            <p>This website uses <a href="https://disqus.com">disqus</a> for the commenting functionality. In order to protect your privacy comments are <em>disabled by default</em>.</p>
+            <a id="enable_comments" href="magento-for-typo3-developers.html#">Enable Comments</a>
+        </div>
+        <div id="disqus_thread"></div>
+        <script type="text/javascript">
+            var disqus_shortname = 'fbrnc';
+                        var disqus_identifier = 'pages_2332';
+                    </script>
+
+    
+    </div>
+
+</div>
+			</div>
+			<div id="sidebar" class="block size-1-3 pure-u-1-3">
+				<div class="sidebar-content profile">
+    <div class="profile-image">
+        <img src="../../../user/themes/antimatter/images/fabrizio_polaroid.png" alt="Fabrizio Branca"/>
+    </div>
+    <div class="profile-content">
+        <p><strong>Hi, I'm Fabrizio!</strong></p>
+        <p>I'm a web developer from San Francisco, CA and I work for <a href="http://www.aoe.com">AOE</a>.</p>
+        <p>Follow me on <a href="https://twitter.com/fbrnc">Twitter</a> or check out my stuff on <a href="https://github.com/fbrnc">GitHub</a>.</p>
+            </div>
+</div>
+<div class="sidebar-content sidebar-certifications">
+    <h4>Certifications</h4>
+    <ul>
+        <li>
+            <img src="../../../user/themes/antimatter/images/cert/Solutions-Architect-Associate.png" alt="AWS Certified Solutions Architect - Associate"/>
+        </li>
+        <li>
+            <img src="../../../user/themes/antimatter/images/cert/Developer-Associate.png" alt="AWS Certified Developer - Associate"/>
+        </li>
+        <li>
+            <img src="../../../user/themes/antimatter/images/cert/SysOps-Administrator-Associate.png" alt="AWS Certified SysOps Administrator - Associate"/>
+        </li>
+        <li>
+            <a href="https://magento.com/blog/magento-news/meet-2016-magento-masters-mentors">
+                <img src="../../../user/themes/antimatter/images/cert/magento_master_2016.png" alt="Magento Masters 2016"/>
+            </a>
+        </li>
+        <li>
+            <a href="http://www.magentocommerce.com/certification/directory/dev/65753/">
+                <img src="../../../user/themes/antimatter/images/cert/magento_certified_developer_plus.png" alt="Magento Certified Developer Plus"/>
+            </a>
+        </li>
+        <li>
+            <a href="http://www.magentocommerce.com/certification/directory/dev/65753/">
+                <img src="../../../user/themes/antimatter/images/cert/frontend_developer.png" alt="Magento Certified Frontend Developer"/>
+            </a>
+        </li>
+        <li>
+            <a href="http://typo3.org/certification/about-the-certification/certified-typo3-cms-integrator-listing/show/branca-fabrizio/">
+                <img src="../../../user/themes/antimatter/images/cert/TYPO3-Certified-Integrator-black-140.png" alt="TYPO3 Certified Integrator"/>
+            </a>
+        </li>
+        <li>
+            <a href="http://www.zend.com/en/services/certification/zend-certified-engineer-directory#ClientCandidateID=ZEND009995&cid=0">
+                <img src="../../../user/themes/antimatter/images/cert/php5_zce_logo_new.gif" alt="Zend Certified Engineer"/>
+            </a>
+        </li>
+    </ul>
+</div>
+<div class="sidebar-content sidebar-tags">
+    <h4>Popular Tags</h4>
+    
+<span class="tags">
+                    <a class="" href="../../../tag%253AGallery.html">Gallery</a>
+                    <a class="" href="../../../tag%253AMagento.html">Magento</a>
+                    <a class="" href="../../../tag%253ADevelopment.html">Development</a>
+                    <a class="" href="../../../tag%253ATYPO3.html">TYPO3</a>
+                    <a class="" href="../../../tag%253APhotography.html">Photography</a>
+                    <a class="" href="../../../tag%253ASonstiges.html">Sonstiges</a>
+                    <a class="" href="../../../tag%253A30&#32;day&#32;photo&#32;challenge.html">30 day photo challenge</a>
+                    <a class="" href="../../../tag%253APfadfinder.html">Pfadfinder</a>
+                    <a class="" href="../../../tag%253ACaching.html">Caching</a>
+                    <a class="" href="../../../tag%253AAWS.html">AWS</a>
+                    <a class="" href="http://fbrnc.net/tag:Flash/Actionscript">Flash/Actionscript</a>
+                    <a class="" href="../../../tag%253APortfolio.html">Portfolio</a>
+                    <a class="" href="../../../tag%253ACloudFormation.html">CloudFormation</a>
+                    <a class="" href="../../../tag%253AVarnish.html">Varnish</a>
+                    <a class="" href="../../../tag%253ALambda.html">Lambda</a>
+                    <a class="" href="../../../tag%253AHome.html">Home</a>
+                    <a class="" href="../../../tag%253ABücher.html">Bücher</a>
+                    <a class="" href="../../../tag%253APresentation.html">Presentation</a>
+                    <a class="" href="../../../tag%253ADesign.html">Design</a>
+                    <a class="" href="../../../tag%253AOpen&#32;Source.html">Open Source</a>
+                    <a class="" href="../../../tag%253AStudium.html">Studium</a>
+                    <a class="" href="../../../tag%253ADeployment.html">Deployment</a>
+                    <a class="" href="../../../tag%253AOpsWorks.html">OpsWorks</a>
+                    <a class="" href="../../../tag%253AMeetup.html">Meetup</a>
+                    <a class="" href="../../../tag%253AKISS.html">KISS</a>
+                    <a class="" href="../../../tag%253ASNS.html">SNS</a>
+                    <a class="" href="../../../tag%253AMicroservices.html">Microservices</a>
+                    <a class="" href="../../../tag%253AArchitecture.html">Architecture</a>
+                    <a class="" href="../../../tag%253AKinesis.html">Kinesis</a>
+                    <a class="" href="../../../tag%253ASQS.html">SQS</a>
+                    <a class="" href="../../../tag%253AWorkflow.html">Workflow</a>
+                    <a class="" href="../../../tag%253AJMeter.html">JMeter</a>
+                    <a class="" href="../../../tag%253AGrav.html">Grav</a>
+                    <a class="" href="../../../tag%253AInfrastructure&#32;as&#32;Code.html">Infrastructure as Code</a>
+                    <a class="" href="../../../tag%253ADevOps.html">DevOps</a>
+                    <a class="" href="../../../tag%253AVideos.html">Videos</a>
+                    <a class="" href="../../../tag%253ALightroom.html">Lightroom</a>
+                    <a class="" href="../../../tag%253AScaling.html">Scaling</a>
+                    <a class="" href="../../../tag%253ATricks.html">Tricks</a>
+                    <a class="" href="../../../tag%253AMPMD.html">MPMD</a>
+                    <a class="" href="../../../tag%253ACache.html">Cache</a>
+                    <a class="" href="../../../tag%253ACMS.html">CMS</a>
+                    <a class="" href="../../../tag%253APerformance.html">Performance</a>
+                    <a class="" href="../../../tag%253AGit.html">Git</a>
+    </span>
+</div>
+<div class="sidebar-content sidebar-archives">
+    <h4>Archives</h4>
+	<ul class="archives">
+
+
+                    </ul><ul class="archives">
+        <li class="caption">2016</li>
+        <li>
+        <a href="../../../month%253Amay_2016.html" title="May 2016">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2016.html" title="March 2016">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajan_2016.html" title="January 2016">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2015</li>
+        <li>
+        <a href="../../../month%253Aoct_2015.html" title="October 2015">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2015.html" title="June 2015">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2015.html" title="April 2015">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2014</li>
+        <li>
+        <a href="../../../month%253Adec_2014.html" title="December 2014">
+                <span class="label">5</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2014.html" title="November 2014">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2014.html" title="May 2014">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2014.html" title="March 2014">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2014.html" title="February 2014">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2013</li>
+        <li>
+        <a href="../../../month%253Adec_2013.html" title="December 2013">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2013.html" title="August 2013">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2013.html" title="July 2013">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2013.html" title="May 2013">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2013.html" title="April 2013">
+                <span class="label">10</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2013.html" title="March 2013">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2013.html" title="February 2013">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2012</li>
+        <li>
+        <a href="../../../month%253Adec_2012.html" title="December 2012">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2012.html" title="November 2012">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2012.html" title="October 2012">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2012.html" title="September 2012">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2012.html" title="August 2012">
+                <span class="label">7</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2012.html" title="July 2012">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2012.html" title="June 2012">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2012.html" title="May 2012">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2012.html" title="April 2012">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2012.html" title="March 2012">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2012.html" title="February 2012">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2011</li>
+        <li>
+        <a href="../../../month%253Adec_2011.html" title="December 2011">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2011.html" title="November 2011">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2011.html" title="October 2011">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2011.html" title="September 2011">
+                <span class="label">17</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2011.html" title="August 2011">
+                <span class="label">26</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2011.html" title="July 2011">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2011.html" title="June 2011">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2011.html" title="May 2011">
+                <span class="label">9</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2011.html" title="April 2011">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2011.html" title="March 2011">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2011.html" title="February 2011">
+                <span class="label">9</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2010</li>
+        <li>
+        <a href="../../../month%253Adec_2010.html" title="December 2010">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2010.html" title="October 2010">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2010.html" title="August 2010">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2010.html" title="July 2010">
+                <span class="label">6</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2010.html" title="June 2010">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2010.html" title="April 2010">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2010.html" title="March 2010">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2010.html" title="February 2010">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2009</li>
+        <li>
+        <a href="../../../month%253Adec_2009.html" title="December 2009">
+                <span class="label">7</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2009.html" title="November 2009">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2009.html" title="October 2009">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2009.html" title="September 2009">
+                <span class="label">6</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2009.html" title="August 2009">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2009.html" title="July 2009">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2009.html" title="June 2009">
+                <span class="label">5</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2009.html" title="May 2009">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2009.html" title="February 2009">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajan_2009.html" title="January 2009">
+                <span class="label">5</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2008</li>
+        <li>
+        <a href="../../../month%253Adec_2008.html" title="December 2008">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2008.html" title="November 2008">
+                <span class="label">11</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2008.html" title="August 2008">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2008.html" title="May 2008">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2008.html" title="April 2008">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2008.html" title="March 2008">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2008.html" title="February 2008">
+                <span class="label">7</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajan_2008.html" title="January 2008">
+                <span class="label">10</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2007</li>
+        <li>
+        <a href="../../../month%253Adec_2007.html" title="December 2007">
+                <span class="label">25</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2007.html" title="November 2007">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2007.html" title="October 2007">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2007.html" title="September 2007">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2007.html" title="June 2007">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2007.html" title="May 2007">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2007.html" title="February 2007">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajan_2007.html" title="January 2007">
+                <span class="label">7</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2006</li>
+        <li>
+        <a href="../../../month%253Adec_2006.html" title="December 2006">
+                <span class="label">5</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2006.html" title="November 2006">
+                <span class="label">14</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2006.html" title="October 2006">
+                <span class="label">9</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2006.html" title="September 2006">
+                <span class="label">7</span>
+                </a>
+    </li>
+</ul>
+</div>
+			</div>
+		</div>
+	
+                                    
+        </section>
+        
+                <footer id="footer">
+            <div class="totop">
+                <span><a href="magento-for-typo3-developers.html#" id="toTop"><i class="fa fa-arrow-up"></i></a></span>
+            </div>
+            <p>Powered by <a href="http://getgrav.org">Grav</a>.</p>
+            <p>
+                <a href="../../../blog.atom.html"><i class="fa fa-rss-square"></i> Atom 1.0</a> |
+                <a href="../../../blog.rss.html"><i class="fa fa-rss-square"></i> RSS</a> |
+                <a href="http://fbrnc.net/sitemap">Sitemap</a>
+            </p>
+        </footer>
+            </div>
+    <div class="sb-slidebar sb-left sb-width-thin">
+        <div id="panel">
+        
+<ul class="navigation">
+                                    <li class="active">
+                <a href="../../../index.html">
+                                        Blog
+                </a>
+            </li>
+                                <li class="">
+                <a href="../../../privacy-policy.html">
+                                        Privacy Policy
+                </a>
+            </li>
+                                <li class="">
+                <a href="../../../contact.html">
+                                        Contact
+                </a>
+            </li>
+                    </ul>
+
+        </div>
+    </div>
+            
+        <script>
+        $(function () {
+            $(document).ready(function() {
+              $.slidebars({
+                hideControlClasses: true,
+                scrollLock: true
+              });
+            });
+        });
+        </script>
+    </body>
+</html>
+<!-- Generated: 2016-07-24T17:06:16+02:00 -->

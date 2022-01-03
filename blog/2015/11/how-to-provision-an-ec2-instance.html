@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="utf-8" />
+    <title>How to Provision an EC2 Instance | Fabrizio Branca</title>
+    <meta name="generator" content="GravCMS" />
+<meta name="description" content="Web Development" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="icon" type="image/png" href="http://fbrnc.net/user/themes/antimatter/images/favicon.png" />
+    <link rel="canonical" href="how-to-provision-an-ec2-instance.html" />
+
+                                                            
+                        <link href="../../../assets/69aec95887701d23e4d88f5cc08d450b.css@g-db0a965f.css" type="text/css" rel="stylesheet" />
+
+
+                                                                            <script src="../../../assets/0ce5b591987de495cd9ba62b91568c73.js@g-db0a965f" type="text/javascript" ></script>
+
+
+</head>
+<body id="top" class="">
+    <div id="sb-site">
+                <header id="header">
+
+            <div id="logo">
+                <h3><a href="../../../index.html"><span class="firstline">Fabrizio</span><span class="secondline">Branca
+            </div>
+            <div id="navbar">
+                                                
+<ul class="navigation">
+                                    <li class="active">
+                <a href="../../../index.html">
+                                        Blog
+                </a>
+            </li>
+                                <li class="">
+                <a href="../../../privacy-policy.html">
+                                        Privacy Policy
+                </a>
+            </li>
+                                <li class="">
+                <a href="../../../contact.html">
+                                        Contact
+                </a>
+            </li>
+                    </ul>
+
+                                <span class="panel-activation sb-toggle-left navbar-left menu-btn fa fa-bars"></span>
+            </div>
+
+        </header>
+        
+        
+                <section id="body" class="">
+            					
+<div id="breadcrumbs" itemscope itemtype="http://data-vocabulary.org/Breadcrumb">
+                            <a href="../../../index.html" itemprop="url"><span itemprop="title">Blog</span></a>
+            <i class="fa fa-angle-right"></i>
+                                <a href="http://fbrnc.net/blog/2015" itemprop="url"><span itemprop="title">2015</span></a>
+            <i class="fa fa-angle-right"></i>
+                                <a href="http://fbrnc.net/blog/2015/11" itemprop="url"><span itemprop="title">11</span></a>
+            <i class="fa fa-angle-right"></i>
+                                                <span itemprop="title">How to Provision an EC2 Instance</span>
+                        </div>
+				
+		<div class="blog-content-item grid pure-g-r">
+			<div id="item" class="block pure-u-2-3">
+ 			    <div class="list-item">
+
+    <div class="list-blog-header">
+        <span class="list-blog-date">
+            <span>14 Oct</span>
+            <em>2015</em>
+        </span>
+        <h2><a href="how-to-provision-an-ec2-instance.html" class="post-title">How to Provision an EC2 Instance</a></h2>
+                <span class="tags">
+                        <a href="../../../tag%253AAWS.html">AWS</a>
+                        <a href="../../../tag%253ADevOps.html">DevOps</a>
+                        <a href="../../../tag%253AInfrastructure&#32;as&#32;Code.html">Infrastructure as Code</a>
+                        <a href="../../../tag%253ACloudFormation.html">CloudFormation</a>
+                    </span>
+                
+    </div>
+
+    <div class="list-blog-padding">
+            <p><p>There are many ways how to provision an EC2 instance. And with "provision" I mean "getting everything ready" by installing and configuring all required software and your build in an automated, reproducible way - no, launching an EC2 instance in the AWS Console, logging in via SSH and manually installing Apache and then do a git clone is not "provisioning"...</p>
+<p>Also, in this blog post I'm not focusing on the deployment portion (but if you do, you should look into <a href="https://aws.amazon.com/codedeploy/">AWS CodeDeploy</a>. In fact I like the concept of a server being "immutable", which means whenever you need to make any change (including deploying a new version of your project) you spin up new instances and throw away the old ones. Among many advantages one very nice side-effect of this concept is that you never have to take the current state of an instance into account since you always start from scratch (or at least from a clearly-defined starting point). But that's a different story.</p>
+<p>In this blog post let me help you navigate the jungle of options available on how to provision a EC2 instance:</p>
+<p><a rel="lightbox" data-width="1024" data-height="768" href="../../../images/5/8/f/b/3/58fb37617a1bc232a9ed285475d58a4427a38801-ec2provisioning.png"><img src="../../../images/4/8/2/4/c/4824c3585b4675ed113cb84f8c5deb18b54b0701-ec2provisioning.png" /></a></p>
+<h3><span style="background-color: #FFC000; color: white; padding: 5px 10px;">Use higher-level service</span></h3>
+<p>The easiest option is to use a higher-lever service like <a href="https://aws.amazon.com/elasticbeanstalk">Elastic Beanstalk</a> or <a href="https://aws.amazon.com/opsworks/">AWS OpsWorks</a> where everything is already being taken care of.
+AWS OpsWorks not only uses Chef and allows you to customize (almost) everything, but it also comes with a simple concept for a layered architecture and a concept of deploying builds to your app layer. </p>
+<p>But let's look at the other options in case you're only looking to provision instances (and not the full infrastructure) or if OpsWorks or Elastic Beanstalk are too opinionated for you (and you don't share their opinions... :) </p>
+<h3><span style="background-color: #FFC000; color: white; padding: 5px 10px;">Fully-baked AMI</span></h3>
+<p>A "fully-baked" AMI is a "instance blueprint" that comes with everything you need INCLUDING the current version of your application. In this case you most likely bake the AMI as part of your CI/CD pipeline and after booting an EC2 instance with this image no further provisioning happens and the instance is ready to use.</p>
+<p>But of course the process of preparing the images ("baking") involves some provisioning, so all the other options here are still relevant. They just happen at a different point in time in your development and deployment workflows.</p>
+<h3><span style="background-color: #FFC000; color: white; padding: 5px 10px;">Half-baked AMI</span></h3>
+<p>The "half-baked" AMI is a compromise between "fully-baked" and "not baked". You'd still provision everything you need on the images except for the build. This way you can reuse the same AMI for all your builds (unless you make changes to the server instance itself) and deploy and install the build after booting.
+Again, the following options still apply during your baking process and in addition you also need to have a concept in place of how to get the build deployed and installed. </p>
+<h3><span style="background-color: #FFC000; color: white; padding: 5px 10px;">Vanilla AMI</span></h3>
+<p>Using a vanilla AMI to get started is easier since you don't have to deal with baking your own AMI and managing them.
+On the downside booting your instance might take significantly longer and with much more "moving parts" there's a higher risk that something might fail.</p>
+<p>However, let's assume we're starting with a vanilla AMI since that's what you have to do in any case at one point or the other.</p>
+<h3><span style="background-color: #92D050; color: white; padding: 5px 10px;">From "outside"</span></h3>
+<p>One option is to boot an EC2 instance and then log in via SSH to do the rest. This is how tools like <a href="http://www.ansible.com/">Ansible</a> and <a href="https://github.com/mitchellh/vagrant-aws">Vagrant</a> work. </p>
+<p>The information what needs to be done lives outside of the box and the provisioning process is therefore "remote controlled".
+Usually it's the same tool also spining up the EC2 instance in the first place and making sure a key is in place that allows the tool to access the instance later.</p>
+<h3><span style="background-color: #92D050; color: white; padding: 5px 10px;">From "inside"</span></h3>
+<p>AWS offers mechanisms to provision EC2 instances as part of your boot process. Let's have a close look:</p>
+<h3><span style="background-color: #00B050; color: white; padding: 5px 10px;">AWS:CloudFormation:Init</span></h3>
+<p>In case you're using <a href="https://aws.amazon.com/cloudformation/">CloudFormation</a> to set up your infrastructure you can add some declarative provisioning instructions as part of your <code>AWS::EC2::Instance</code> or <code>AWS::AutoScaling::LaunchConfiguration</code>'s <code>Metadata</code>.</p>
+<p>Here's a basic template taken from the <a href="http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-init.html">documentation</a>:</p>
+<pre><code>"Resources": {
+  "MyInstance": {
+    "Type": "AWS::EC2::Instance",
+    "Metadata" : {
+      "AWS::CloudFormation::Init" : {
+        "config" : {
+          "packages" : {},
+          "groups" : {},
+          "users" : {},
+          "sources" : {},
+          "files" : {},
+          "commands" : {},
+          "services" : {}
+        }
+      }
+    },
+    "Properties": {
+      [...]
+    }
+  }
+}</code></pre>
+<h3><span style="background-color: #00B050; color: white; padding: 5px 10px;">cloud-init</span></h3>
+<p>An alternative to <code>AWS:CloudFormation:Init</code> is <code>cloud-init</code> which lives in the <code>UserData</code> field (instead of in the <code>Metadata</code>). <code>cloud-init</code> is not restricted to CloudFormation but can be set wherever you can launch an EC2 instance:</p>
+<ul>
+<li>CloudFormation</li>
+<li>AWS SDKs</li>
+<li>AWS CLI</li>
+<li>AWS Console</li>
+</ul>
+<p>Cloud-init is not specific to AWS, but is handled in EC2 and the Amazon Linux distribution supports it (in addition to some other Linux distributions like Ubuntu...):</p>
+<blockquote>
+<p>"The cloud-init package is an open source application built by Canonical that is used to bootstrap Linux images in a cloud computing environment, such as Amazon EC2. Amazon Linux contains a customized version of cloud-init." (http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AmazonLinuxAMIBasics.html#CloudInit)</p>
+</blockquote>
+<p>Cloud-init comes in different "flavors" depending on your Linux distribution. Check out the corresponding documentation:</p>
+<ul>
+<li>https://cloudinit.readthedocs.org/en/latest/ </li>
+<li>Amazon Linux: http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/user-data.html</li>
+<li>Ubuntu: https://help.ubuntu.com/community/CloudInit</li>
+</ul>
+<p>Cloud-init writes all its output to <code>/var/log/cloud-init.log</code>. Check this out in case your provisioning scripts don't work like you expect.</p>
+<p>The <code>UserData</code> field that holds the cloud-init content is base64 encoded. Embedding it via a CloudFormation template can be done using some helper methods:</p>
+<pre><code>"UserData": {"Fn::Base64": {"Fn::Join" : ["", [
+    "#!/bin/bash -xe\n",
+    "echo \"Hello World\"\n"
+]]}}</code></pre>
+<p>If you have an existing script and you want to "convert" it into JSON for CloudFormation (including correct escaping) <a href="https://gist.github.com/fbrnc/31968df1a3342b82bfd1">this one-liner</a> might be useful for you:</p>
+<pre><code>&lt;?php echo '{"Fn::Base64": {"Fn::Join": ["\n", ' . 
+json_encode(file($argv[1], FILE_IGNORE_NEW_LINES), JSON_PRETTY_PRINT) .
+']}}';</code></pre>
+<p>There's a couple of different things you can do with Cloud-init. Let's have a closer look:</p>
+<h4><span style="background-color: #00B0F0; color: white; padding: 5px 10px;">Include file(s)</span></h4>
+<p>You can include one or more files. Every file is parsed the same way the UserData is parsed. So you can include more files, run scripts or use cloud-config YAML in those files.</p>
+<pre><code>#include http://example.com/setup.sh</code></pre>
+<h4><span style="background-color: #00B0F0; color: white; padding: 5px 10px;">cloud-config</span></h4>
+<p>If your UserData starts with <code>#cloud-config</code> the following block is parsed as YAML.
+Cloud-config again is a declarative format (that also allows running scripts) helping you to install packages, create files, setup users and services,...</p>
+<p>Please note: </p>
+<blockquote>
+<p>"The Amazon Linux version of cloud-init does not support all of the directives that are available in the base package, and some of the directives have been renamed (such as repo_update instead of apt-upgrade)." http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/user-data.html</p>
+</blockquote>
+<p>Example: </p>
+<pre><code>#cloud-config
+packages:
+  - apache2
+  - libapache2-mod-php5
+runcmd:
+  - "echo '&lt;?php echo \"Hello, World!\";' &gt; /var/www/html/index.php"</code></pre>
+<p>Find a lot more examples here: Examples: http://bazaar.launchpad.net/~cloud-init-dev/cloud-init/trunk/files/head:/doc/examples/</p>
+<h4><span style="background-color: #00B0F0; color: white; padding: 5px 10px;">Script</span></h4>
+<p>If your UserData starts with <code>#!</code> the content is considered a script (and run as root). It's up to you to do whatever you need to do.</p>
+<p>Example:</p>
+<pre><code>#!/bin/bash
+export DEBIAN_FRONTEND=noninteractive
+apt-get update &amp;&amp; apt-get -y --force-yes install lamp-server^
+echo '&lt;?php phpinfo(); ?&gt;' &gt; /var/www/html/phpinfo.php</code></pre>
+<h5><span style="background-color: #0070C0; color: white; padding: 5px 10px;">Install Chef/Puppet/...</span></h5>
+<p>If you prefer using Chef, Puppet or another tool this (or <code>cloud-config</code>, or <code>AWS:CloudFormation:Init</code>) would be the place to install the agent. Here's some documentation on how to use Chef: https://s3.amazonaws.com/cloudformation-examples/IntegratingAWSCloudFormationWithOpscodeChef.pdf and here are bootstrap scripts for Puppet: https://github.com/hashicorp/puppet-bootstrap</p>
+<h5><span style="background-color: #002060; color: white; padding: 5px 10px;">Provision locally</span> /  <span style="background-color: #002060; color: white; padding: 5px 10px;">Control from outside</span></h5>
+<p>Depending on your preference you could use <a href="https://docs.chef.io/chef_solo.html">Chef-Solo</a> (or chef-client's local mode) to make your instances boot process self-contained or reach out to a Chef Server (or something else) in order to manage this instance (and the complete lifecycle) remotely.</p>
+<h3><span style="background-color: #0070C0; color: white; padding: 5px 10px;">DIY</span> / Keeping it simple... :)</h3>
+<p>Especially taking the immutable server concept into account (see: <a href="http://www.slideshare.net/randybias/pets-vs-cattle-the-elastic-cloud-story">pets vs cattle</a>...) I think in many cases managing the server remotely and trying to be cloud and distribution agnostic is a waste of time and energy.
+A short bash script (that might pull in some more configuration files from an S3 bucket) is easy to write, read, test and debug and takes the complexity out of provisioning an instance.</p>
+<p>Using <a href="http://docs.aws.amazon.com/codedeploy/latest/userguide/how-to-create-iam-instance-profile.html">IAM instance profiles (roles)</a> allows you to manage access to S3 buckets and querying the infrastructure via the AWS cli without embedding an credentials. </p>
+<p>And with the use of tags you can pass some basic data to the EC2 instance without having it to embed dynamically in the UserData string. Example: <code>"Tags": [{"Key": "Build", "Value": "s3://mybucket/v42/project.tar.gz"}</code>.</p></p>
+
+        <div class="share">
+            <span>Share via: </span>
+            <ul>
+                <li><a target="_blank" href="https://twitter.com/home?status=How%20to%20Provision%20an%20EC2%20Instance%20http%3A%2F%2Ffbrnc.net%2Fblog%2F2015%2F11%2Fhow-to-provision-an-ec2-instance%20%2Fvia%20%40fbrnc">Twitter</a></li>
+                <li><a target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=http%3A%2F%2Ffbrnc.net%2Fblog%2F2015%2F11%2Fhow-to-provision-an-ec2-instance">Facebook</a></li>
+                <li><a target="_blank" href="https://plus.google.com/share?url=http%3A%2F%2Ffbrnc.net%2Fblog%2F2015%2F11%2Fhow-to-provision-an-ec2-instance">Google+</a></li>
+                <li><a target="_blank" href="mailto:?subject=Reading Recommendation&amp;body=Check out this article: How to Provision an EC2 Instance http%3A%2F%2Ffbrnc.net%2Fblog%2F2015%2F11%2Fhow-to-provision-an-ec2-instance by Fabrizio Branca .">Mail</a></li>
+            </ul>
+        </div>
+
+        <h4>Comments</h4>
+        <div class="enable_comments_notice">
+            <p>This website uses <a href="https://disqus.com">disqus</a> for the commenting functionality. In order to protect your privacy comments are <em>disabled by default</em>.</p>
+            <a id="enable_comments" href="how-to-provision-an-ec2-instance.html#">Enable Comments</a>
+        </div>
+        <div id="disqus_thread"></div>
+        <script type="text/javascript">
+            var disqus_shortname = 'fbrnc';
+                    </script>
+
+    
+    </div>
+
+</div>
+			</div>
+			<div id="sidebar" class="block size-1-3 pure-u-1-3">
+				<div class="sidebar-content profile">
+    <div class="profile-image">
+        <img src="../../../user/themes/antimatter/images/fabrizio_polaroid.png" alt="Fabrizio Branca"/>
+    </div>
+    <div class="profile-content">
+        <p><strong>Hi, I'm Fabrizio!</strong></p>
+        <p>I'm a web developer from San Francisco, CA and I work for <a href="http://www.aoe.com">AOE</a>.</p>
+        <p>Follow me on <a href="https://twitter.com/fbrnc">Twitter</a> or check out my stuff on <a href="https://github.com/fbrnc">GitHub</a>.</p>
+            </div>
+</div>
+<div class="sidebar-content sidebar-certifications">
+    <h4>Certifications</h4>
+    <ul>
+        <li>
+            <img src="../../../user/themes/antimatter/images/cert/Solutions-Architect-Associate.png" alt="AWS Certified Solutions Architect - Associate"/>
+        </li>
+        <li>
+            <img src="../../../user/themes/antimatter/images/cert/Developer-Associate.png" alt="AWS Certified Developer - Associate"/>
+        </li>
+        <li>
+            <img src="../../../user/themes/antimatter/images/cert/SysOps-Administrator-Associate.png" alt="AWS Certified SysOps Administrator - Associate"/>
+        </li>
+        <li>
+            <a href="https://magento.com/blog/magento-news/meet-2016-magento-masters-mentors">
+                <img src="../../../user/themes/antimatter/images/cert/magento_master_2016.png" alt="Magento Masters 2016"/>
+            </a>
+        </li>
+        <li>
+            <a href="http://www.magentocommerce.com/certification/directory/dev/65753/">
+                <img src="../../../user/themes/antimatter/images/cert/magento_certified_developer_plus.png" alt="Magento Certified Developer Plus"/>
+            </a>
+        </li>
+        <li>
+            <a href="http://www.magentocommerce.com/certification/directory/dev/65753/">
+                <img src="../../../user/themes/antimatter/images/cert/frontend_developer.png" alt="Magento Certified Frontend Developer"/>
+            </a>
+        </li>
+        <li>
+            <a href="http://typo3.org/certification/about-the-certification/certified-typo3-cms-integrator-listing/show/branca-fabrizio/">
+                <img src="../../../user/themes/antimatter/images/cert/TYPO3-Certified-Integrator-black-140.png" alt="TYPO3 Certified Integrator"/>
+            </a>
+        </li>
+        <li>
+            <a href="http://www.zend.com/en/services/certification/zend-certified-engineer-directory#ClientCandidateID=ZEND009995&cid=0">
+                <img src="../../../user/themes/antimatter/images/cert/php5_zce_logo_new.gif" alt="Zend Certified Engineer"/>
+            </a>
+        </li>
+    </ul>
+</div>
+<div class="sidebar-content sidebar-tags">
+    <h4>Popular Tags</h4>
+    
+<span class="tags">
+                    <a class="" href="../../../tag%253AGallery.html">Gallery</a>
+                    <a class="" href="../../../tag%253AMagento.html">Magento</a>
+                    <a class="" href="../../../tag%253ADevelopment.html">Development</a>
+                    <a class="" href="../../../tag%253ATYPO3.html">TYPO3</a>
+                    <a class="" href="../../../tag%253APhotography.html">Photography</a>
+                    <a class="" href="../../../tag%253ASonstiges.html">Sonstiges</a>
+                    <a class="" href="../../../tag%253A30&#32;day&#32;photo&#32;challenge.html">30 day photo challenge</a>
+                    <a class="" href="../../../tag%253APfadfinder.html">Pfadfinder</a>
+                    <a class="" href="../../../tag%253ACaching.html">Caching</a>
+                    <a class="" href="../../../tag%253AAWS.html">AWS</a>
+                    <a class="" href="http://fbrnc.net/tag:Flash/Actionscript">Flash/Actionscript</a>
+                    <a class="" href="../../../tag%253APortfolio.html">Portfolio</a>
+                    <a class="" href="../../../tag%253ACloudFormation.html">CloudFormation</a>
+                    <a class="" href="../../../tag%253AVarnish.html">Varnish</a>
+                    <a class="" href="../../../tag%253ALambda.html">Lambda</a>
+                    <a class="" href="../../../tag%253AHome.html">Home</a>
+                    <a class="" href="../../../tag%253ABücher.html">Bücher</a>
+                    <a class="" href="../../../tag%253APresentation.html">Presentation</a>
+                    <a class="" href="../../../tag%253ADesign.html">Design</a>
+                    <a class="" href="../../../tag%253AOpen&#32;Source.html">Open Source</a>
+                    <a class="" href="../../../tag%253AStudium.html">Studium</a>
+                    <a class="" href="../../../tag%253ADeployment.html">Deployment</a>
+                    <a class="" href="../../../tag%253AOpsWorks.html">OpsWorks</a>
+                    <a class="" href="../../../tag%253AMeetup.html">Meetup</a>
+                    <a class="" href="../../../tag%253AKISS.html">KISS</a>
+                    <a class="" href="../../../tag%253ASNS.html">SNS</a>
+                    <a class="" href="../../../tag%253AMicroservices.html">Microservices</a>
+                    <a class="" href="../../../tag%253AArchitecture.html">Architecture</a>
+                    <a class="" href="../../../tag%253AKinesis.html">Kinesis</a>
+                    <a class="" href="../../../tag%253ASQS.html">SQS</a>
+                    <a class="" href="../../../tag%253AWorkflow.html">Workflow</a>
+                    <a class="" href="../../../tag%253AJMeter.html">JMeter</a>
+                    <a class="" href="../../../tag%253AGrav.html">Grav</a>
+                    <a class="" href="../../../tag%253AInfrastructure&#32;as&#32;Code.html">Infrastructure as Code</a>
+                    <a class="" href="../../../tag%253ADevOps.html">DevOps</a>
+                    <a class="" href="../../../tag%253AVideos.html">Videos</a>
+                    <a class="" href="../../../tag%253ALightroom.html">Lightroom</a>
+                    <a class="" href="../../../tag%253AScaling.html">Scaling</a>
+                    <a class="" href="../../../tag%253ATricks.html">Tricks</a>
+                    <a class="" href="../../../tag%253AMPMD.html">MPMD</a>
+                    <a class="" href="../../../tag%253ACache.html">Cache</a>
+                    <a class="" href="../../../tag%253ACMS.html">CMS</a>
+                    <a class="" href="../../../tag%253APerformance.html">Performance</a>
+                    <a class="" href="../../../tag%253AGit.html">Git</a>
+    </span>
+</div>
+<div class="sidebar-content sidebar-archives">
+    <h4>Archives</h4>
+	<ul class="archives">
+
+
+                    </ul><ul class="archives">
+        <li class="caption">2016</li>
+        <li>
+        <a href="../../../month%253Amay_2016.html" title="May 2016">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2016.html" title="March 2016">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajan_2016.html" title="January 2016">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2015</li>
+        <li>
+        <a href="../../../month%253Aoct_2015.html" title="October 2015">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2015.html" title="June 2015">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2015.html" title="April 2015">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2014</li>
+        <li>
+        <a href="../../../month%253Adec_2014.html" title="December 2014">
+                <span class="label">5</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2014.html" title="November 2014">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2014.html" title="May 2014">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2014.html" title="March 2014">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2014.html" title="February 2014">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2013</li>
+        <li>
+        <a href="../../../month%253Adec_2013.html" title="December 2013">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2013.html" title="August 2013">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2013.html" title="July 2013">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2013.html" title="May 2013">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2013.html" title="April 2013">
+                <span class="label">10</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2013.html" title="March 2013">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2013.html" title="February 2013">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2012</li>
+        <li>
+        <a href="../../../month%253Adec_2012.html" title="December 2012">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2012.html" title="November 2012">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2012.html" title="October 2012">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2012.html" title="September 2012">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2012.html" title="August 2012">
+                <span class="label">7</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2012.html" title="July 2012">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2012.html" title="June 2012">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2012.html" title="May 2012">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2012.html" title="April 2012">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2012.html" title="March 2012">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2012.html" title="February 2012">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2011</li>
+        <li>
+        <a href="../../../month%253Adec_2011.html" title="December 2011">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2011.html" title="November 2011">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2011.html" title="October 2011">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2011.html" title="September 2011">
+                <span class="label">17</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2011.html" title="August 2011">
+                <span class="label">26</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2011.html" title="July 2011">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2011.html" title="June 2011">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2011.html" title="May 2011">
+                <span class="label">9</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2011.html" title="April 2011">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2011.html" title="March 2011">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2011.html" title="February 2011">
+                <span class="label">9</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2010</li>
+        <li>
+        <a href="../../../month%253Adec_2010.html" title="December 2010">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2010.html" title="October 2010">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2010.html" title="August 2010">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2010.html" title="July 2010">
+                <span class="label">6</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2010.html" title="June 2010">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2010.html" title="April 2010">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2010.html" title="March 2010">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2010.html" title="February 2010">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2009</li>
+        <li>
+        <a href="../../../month%253Adec_2009.html" title="December 2009">
+                <span class="label">7</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2009.html" title="November 2009">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2009.html" title="October 2009">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2009.html" title="September 2009">
+                <span class="label">6</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2009.html" title="August 2009">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2009.html" title="July 2009">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2009.html" title="June 2009">
+                <span class="label">5</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2009.html" title="May 2009">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2009.html" title="February 2009">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajan_2009.html" title="January 2009">
+                <span class="label">5</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2008</li>
+        <li>
+        <a href="../../../month%253Adec_2008.html" title="December 2008">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2008.html" title="November 2008">
+                <span class="label">11</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2008.html" title="August 2008">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2008.html" title="May 2008">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2008.html" title="April 2008">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2008.html" title="March 2008">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2008.html" title="February 2008">
+                <span class="label">7</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajan_2008.html" title="January 2008">
+                <span class="label">10</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2007</li>
+        <li>
+        <a href="../../../month%253Adec_2007.html" title="December 2007">
+                <span class="label">25</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2007.html" title="November 2007">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2007.html" title="October 2007">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2007.html" title="September 2007">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2007.html" title="June 2007">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2007.html" title="May 2007">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2007.html" title="February 2007">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajan_2007.html" title="January 2007">
+                <span class="label">7</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2006</li>
+        <li>
+        <a href="../../../month%253Adec_2006.html" title="December 2006">
+                <span class="label">5</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2006.html" title="November 2006">
+                <span class="label">14</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2006.html" title="October 2006">
+                <span class="label">9</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2006.html" title="September 2006">
+                <span class="label">7</span>
+                </a>
+    </li>
+</ul>
+</div>
+			</div>
+		</div>
+	
+                                    
+        </section>
+        
+                <footer id="footer">
+            <div class="totop">
+                <span><a href="how-to-provision-an-ec2-instance.html#" id="toTop"><i class="fa fa-arrow-up"></i></a></span>
+            </div>
+            <p>Powered by <a href="http://getgrav.org">Grav</a>.</p>
+            <p>
+                <a href="../../../blog.atom.html"><i class="fa fa-rss-square"></i> Atom 1.0</a> |
+                <a href="../../../blog.rss.html"><i class="fa fa-rss-square"></i> RSS</a> |
+                <a href="http://fbrnc.net/sitemap">Sitemap</a>
+            </p>
+        </footer>
+            </div>
+    <div class="sb-slidebar sb-left sb-width-thin">
+        <div id="panel">
+        
+<ul class="navigation">
+                                    <li class="active">
+                <a href="../../../index.html">
+                                        Blog
+                </a>
+            </li>
+                                <li class="">
+                <a href="../../../privacy-policy.html">
+                                        Privacy Policy
+                </a>
+            </li>
+                                <li class="">
+                <a href="../../../contact.html">
+                                        Contact
+                </a>
+            </li>
+                    </ul>
+
+        </div>
+    </div>
+            
+        <script>
+        $(function () {
+            $(document).ready(function() {
+              $.slidebars({
+                hideControlClasses: true,
+                scrollLock: true
+              });
+            });
+        });
+        </script>
+    </body>
+</html>
+<!-- Generated: 2016-07-24T07:13:49+02:00 -->

@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="utf-8" />
+    <title>Make your Magento Store fly using Varnish | Fabrizio Branca</title>
+    <meta name="generator" content="GravCMS" />
+<meta name="description" content="Web Development" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="icon" type="image/png" href="http://fbrnc.net/user/themes/antimatter/images/favicon.png" />
+    <link rel="canonical" href="make-your-magento-store-fly-using-varnish.html" />
+
+                                                            
+                        <link href="../../../assets/69aec95887701d23e4d88f5cc08d450b.css@g-db0a965f.css" type="text/css" rel="stylesheet" />
+
+
+                                                                            <script src="../../../assets/0ce5b591987de495cd9ba62b91568c73.js@g-db0a965f" type="text/javascript" ></script>
+
+
+</head>
+<body id="top" class="">
+    <div id="sb-site">
+                <header id="header">
+
+            <div id="logo">
+                <h3><a href="../../../index.html"><span class="firstline">Fabrizio</span><span class="secondline">Branca
+            </div>
+            <div id="navbar">
+                                                
+<ul class="navigation">
+                                    <li class="active">
+                <a href="../../../index.html">
+                                        Blog
+                </a>
+            </li>
+                                <li class="">
+                <a href="../../../privacy-policy.html">
+                                        Privacy Policy
+                </a>
+            </li>
+                                <li class="">
+                <a href="../../../contact.html">
+                                        Contact
+                </a>
+            </li>
+                    </ul>
+
+                                <span class="panel-activation sb-toggle-left navbar-left menu-btn fa fa-bars"></span>
+            </div>
+
+        </header>
+        
+        
+                <section id="body" class="">
+            					
+<div id="breadcrumbs" itemscope itemtype="http://data-vocabulary.org/Breadcrumb">
+                            <a href="../../../index.html" itemprop="url"><span itemprop="title">Blog</span></a>
+            <i class="fa fa-angle-right"></i>
+                                <a href="http://fbrnc.net/blog/2011" itemprop="url"><span itemprop="title">2011</span></a>
+            <i class="fa fa-angle-right"></i>
+                                <a href="http://fbrnc.net/blog/2011/05" itemprop="url"><span itemprop="title">05</span></a>
+            <i class="fa fa-angle-right"></i>
+                                                <span itemprop="title">Make your Magento Store fly using Varnish</span>
+                        </div>
+				
+		<div class="blog-content-item grid pure-g-r">
+			<div id="item" class="block pure-u-2-3">
+ 			    <div class="list-item">
+
+    <div class="list-blog-header">
+        <span class="list-blog-date">
+            <span>25 May</span>
+            <em>2011</em>
+        </span>
+        <h2><a href="make-your-magento-store-fly-using-varnish.html" class="post-title">Make your Magento Store fly using Varnish</a></h2>
+                <span class="tags">
+                        <a href="../../../tag%253AMagento.html">Magento</a>
+                        <a href="../../../tag%253ADevelopment.html">Development</a>
+                        <a href="../../../tag%253ACaching.html">Caching</a>
+                        <a href="../../../tag%253AVarnish.html">Varnish</a>
+                    </span>
+                
+    </div>
+
+    <div class="list-blog-padding">
+            <p><h3>Problem</h3>
+<p>Magento is <strong>slow</strong>! </p>
+<p>Whatever module you'll use to improve caching, as long as Magento is involved - even if it is only for determining what data to load from its cache - it will be <strong>slow</strong>. There are some nice fullpage cache solutions around, but still: <strong>slow</strong> (at least compared to what can be achieved if you can avoid Magento for many pages completely).</p>
+<h3>Analysis</h3>
+<p>When having a closer look to the pages that are delivered by Magento we can easily see that there is a huge percentage of pages that are almost the same for all users. </p>
+<p>So let's have a look at a product listing page and spot the areas that my contain some user specific information:</p>
+<p><img src="../../../user/pages/01.blog/2011/05/make-your-magento-store-fly-using-varnish/dynamic_parts.png" /></p>
+<p>So the dynamic parts in this Magento Demo Store are </p>
+<ul>
+<li>the <strong>menu</strong> in the top left corner (the third menu item is showing how many cart items are in the cart),</li>
+<li>the <strong>cart in the right sidebar</strong></li>
+<li>and the <strong>recently viewed products</strong>.</li>
+</ul>
+<p>Everything else on this page is pretty static and does not differ from user to user. So this page is a candidate for being cached. </p>
+<p>The pages (Magento actions) delivering "almost static" informations are </p>
+<ul>
+<li>cms_index_index (the front page),</li>
+<li>cms_page_view (other cms pages),</li>
+<li>catalog_product_view (the product single views) and</li>
+<li>catalog_category_view (the product listings).</li>
+</ul>
+<p>Of course these are store specific assumptions and might differ in your store! </p>
+<p>A rough estimation is that <strong>90%</strong> of all pages delivered from a Magento instance are being processed by one of those actions.</p>
+<h3>Solution</h3>
+<p>These pages are candidates for being cached by a strong cache mechanism allowing us to deliver these pages way much faster than if they had to be re-generated first or if Magento had to read them from an internal cache. </p>
+<p>We could also generate static html files for those pages and deliver them instead (actually this is what I'm doing with <a href="../../../blog.html">this blog</a> using TYPO3 and the extension <a href="http://forge.typo3.org/projects/show/extension-nc_staticfilecache">nc_staticfilecache</a>) but we'll use <a href="http://www.varnish-cache.org/">Varnish</a> for this purpose which comes with some additional handy features and might be even faster then a common webserver delivering static html files.</p>
+<h3>Varnish</h3>
+<p>Varnish is</p>
+<ul>
+<li>a http accelerator</li>
+<li>a load balancer</li>
+<li>a failover system and</li>
+<li><strong>a caching reverse proxy</strong></li>
+</ul>
+<p>that claims to "make websites fly". </p>
+<p>So we put Varnish in front of Magento (Apache/Mysql/PHP) deciding whether to deliver a previously cached page or whether to ask pass the request to Magento. </p>
+<p>(You might consider to put <a href="http://nginx.net/">ngnix</a> in front of Varnish to handle compression and encryption. With the upcoming Varnish 3 these issues might be handled directly from Varnish itself.) </p>
+<p>Varnish comes with an own configuration language "VCL" that will be translated into C code and then compiled. This makes Varnish extremely fast. </p>
+<p>With VCL you can define subroutines that are executed at some defined parts within the request/response process offering you different objects to realize your very custom behaviour.</p>
+<p><img src="../../../user/pages/01.blog/2011/05/make-your-magento-store-fly-using-varnish/browser_varnish_magento.png" /></p>
+<p>Here is a simplyfied overwiew of the process and the subroutines. (Check the Varnish documentation for <a href="http://www.varnish-cache.org/trac/wiki/VCLExampleDefault">a detailed diagram</a>)</p>
+<p><img src="../../../user/pages/01.blog/2011/05/make-your-magento-store-fly-using-varnish/Varnish_Request_Paths.png" /></p>
+<h3>How does it work?</h3>
+<p>My idea was to replace all dynamic parts of a page by static placeholders. </p>
+<pre><code>&lt;layout&gt;  
+    &lt;default&gt;  
+        &lt;reference name="right"&gt;  
+
+            &lt;block type="core/text" name="ph_cart" before="-"&gt;  
+                &lt;action method="setText"&gt;&lt;param&gt;&lt;![CDATA[  
+                    &lt;div id="cart_sidebar" class="placeholder"                               
+                    rel="cart_sidebar"&gt;Placeholder Cart&lt;/div&gt;  
+                ]]&gt;&lt;/param&gt;&lt;/action&gt;  
+            &lt;/block&gt;  
+
+            &lt;action method="unsetChild"&gt;&lt;param&gt;cart_sidebar&lt;/param&gt;&lt;/action&gt;  
+
+        &lt;/reference&gt;  
+    &lt;/default&gt;  
+&lt;/layout&gt;</code></pre>
+<p>By <strong>unsetting</strong> them instead of <strong>removing</strong> them they are still available and can be rendered and delivered by a dedicated controller. </p>
+<p>So I created a little extension "Aoe_Static". You can configure what actions might deliver cached content and the extension takes care of sending HTTP headers with information on the lifetime and a flag allowing Varnish to cache the delivered page. Future requests to this page won't be passed to Apache but delivered directly from Varnish in much less time. At least for the time period the page's lifetime hasn't expired yet. </p>
+<p>Aoe_Static also comes with a piece of JavaScript that looks for placeholder elements (wrapped in elements with the class "placeholder"), collects them and sends an <strong>AJAX request</strong> to a controller, that also comes with Aoe_Static. This controller renders all requested Blocks and returns them to the browser, where they will be inserted into their correct positions. </p>
+<p>Besides that additional information can be passed to the server like the id of the currently viewed product, that is needed for the "recently viewed product" page. </p>
+<p>And on the other hand the server can transfer additional user-specific content to the browser like the session id, that is stored in a cookie to maintain the session for future requests.</p>
+<p><img src="../../../user/pages/01.blog/2011/05/make-your-magento-store-fly-using-varnish/request_cached.png" /></p>
+<p>This is how a dynamic request will be processed. Note that most of the content (the static part) is already visible earlier (see gray bar). Delivering the static part is much faster than asking Magento, because in most cases it should come from Varnish's cache. And even the rendering of the dynamic parts should be faster, because Magento only needs to render these blocks, while ignoring the rest of the layout completely. </p>
+<h3>Uncached pages</h3>
+<p>There are still some page requests that deliver very user-specific content. The cart, the checkout process and "My Account" are some examples. All cases not explicitly defined as cacheable in the Aoe_Static extension (see System -&gt; Configuration -&gt; System -&gt; Varnish Configuration) Varnish will pass the request to Magento and will not cache any results. As I'm using a whitelist here your Magento Store should not break, even with some custom controllers. An uncached page request would look like this:</p>
+<p><img src="../../../user/pages/01.blog/2011/05/make-your-magento-store-fly-using-varnish/request_uncached.png" /></p>
+<h3>Speed benchmarks</h3>
+<p>I did some speed benchmarks, basically the same way that the <a href="http://www.magespeedtest.com/">Magento Speed Test</a> does it: I've created a Google Sitemap, extracted the urls and tested the speed using Siege. And here are the impressive results:</p>
+<p><img src="../../../user/pages/01.blog/2011/05/make-your-magento-store-fly-using-varnish/statistics.png" /></p>
+<p>I have to admit, tests like these create no really significant test result numbers. But still you can see the tendency. </p>
+<p>Siege tests only urls found in the sitemap. And all those urls are cacheable ones. Besides that I did a cache warming before running the test. So this test result show only cache hits in the "Magento with Varnish" testcase. But still: this is what you could have if your Varnish is configured correctly after some time. And: Search engines do not go through your checkout process or log into to a customer account and - you have to admit - a big number of real users won't do that neither. </p>
+<p>So: Most of your visitors will see most (or even all) pages 200 times fast with Varnish!</p>
+<p>Have a look at Firebug and compare times for a page delivered by <strong>Varnish's Cache (16ms)</strong> and for a page delivered by <strong>Magento's Cache (776ms)</strong>. Even the fastest fullpage cache solution realized within Magento won't be able the bootstrap Magento, pick to correct page from its cache and deliver it to the browser in less than 16 ms!</p>
+<ul>
+<li><img src="../../../user/pages/01.blog/2011/05/make-your-magento-store-fly-using-varnish/firebug_cached.png" /></li>
+<li><img src="../../../user/pages/01.blog/2011/05/make-your-magento-store-fly-using-varnish/firebug_uncached.png" /></li>
+</ul>
+<h3>Demo</h3>
+<p>I've set up a Magento Demo Store with Aoe_Static and Aoe_StaticDemo (which replaces the menu, the cart in the sidebar and the "recently viewed products" by placeholders) and configured Varnish: </p>
+<p>Feel free to play around at </p>
+<h4><a href="http://varnish.demo.aoemedia.de/">http://varnish.demo.aoemedia.de/</a></h4>
+<h3>Make your store fly</h3>
+<p>Get the extensions for free from my GitHub account: <a href="https://github.com/fbrnc/Aoe_Static">Aoe_Static</a> and <a href="https://github.com/fbrnc/Aoe_StaticDemo">Aoe_StaticDemo</a> or download them from here: </p>
+<p><a href="https://github.com/fbrnc/Aoe_Static/zipball/latest">Aoe_Static</a></p>
+<p><a href="https://github.com/fbrnc/Aoe_StaticDemo/zipball/latest">Aoe_StaticDemo</a></p>
+<p>You'll find the Varnish configuration included in Aoe_Static. </p>
+<p>Any feedback is welcome! :) </p>
+<h3>Related posts</h3>
+<ul>
+<li><a href="../../../magento-varnish-ajax-vs-esi.html">Magento &amp; Varnish: Ajax vs. ESI</a></li>
+<li><a href="../../../meet-magento-5-2011-performance-durch-caching.html">Meet Magento #5 2011: Performance durch Caching</a></li>
+<li><a href="../../../magento-caching-internals.html">Magento Caching Internals</a></li>
+<li><a href="../../../magento-automatic-cache-cleaner.html">Magento Automatic Cache Cleaner</a></li>
+<li><a href="../../../magento-asynchronous-cache.html">Magento Asynchronous Cache</a></li>
+<li><a href="../../../magento-two-level-caching.html">Magento Two-Level-Caching</a></li>
+</ul></p>
+
+        <div class="share">
+            <span>Share via: </span>
+            <ul>
+                <li><a target="_blank" href="https://twitter.com/home?status=Make%20your%20Magento%20Store%20fly%20using%20Varnish%20http%3A%2F%2Ffbrnc.net%2Fblog%2F2011%2F05%2Fmake-your-magento-store-fly-using-varnish%20%2Fvia%20%40fbrnc">Twitter</a></li>
+                <li><a target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=http%3A%2F%2Ffbrnc.net%2Fblog%2F2011%2F05%2Fmake-your-magento-store-fly-using-varnish">Facebook</a></li>
+                <li><a target="_blank" href="https://plus.google.com/share?url=http%3A%2F%2Ffbrnc.net%2Fblog%2F2011%2F05%2Fmake-your-magento-store-fly-using-varnish">Google+</a></li>
+                <li><a target="_blank" href="mailto:?subject=Reading Recommendation&amp;body=Check out this article: Make your Magento Store fly using Varnish http%3A%2F%2Ffbrnc.net%2Fblog%2F2011%2F05%2Fmake-your-magento-store-fly-using-varnish by Fabrizio Branca .">Mail</a></li>
+            </ul>
+        </div>
+
+        <h4>Comments</h4>
+        <div class="enable_comments_notice">
+            <p>This website uses <a href="https://disqus.com">disqus</a> for the commenting functionality. In order to protect your privacy comments are <em>disabled by default</em>.</p>
+            <a id="enable_comments" href="make-your-magento-store-fly-using-varnish.html#">Enable Comments</a>
+        </div>
+        <div id="disqus_thread"></div>
+        <script type="text/javascript">
+            var disqus_shortname = 'fbrnc';
+                        var disqus_identifier = 'pages_2351';
+                    </script>
+
+    
+    </div>
+
+</div>
+			</div>
+			<div id="sidebar" class="block size-1-3 pure-u-1-3">
+				<div class="sidebar-content profile">
+    <div class="profile-image">
+        <img src="../../../user/themes/antimatter/images/fabrizio_polaroid.png" alt="Fabrizio Branca"/>
+    </div>
+    <div class="profile-content">
+        <p><strong>Hi, I'm Fabrizio!</strong></p>
+        <p>I'm a web developer from San Francisco, CA and I work for <a href="http://www.aoe.com">AOE</a>.</p>
+        <p>Follow me on <a href="https://twitter.com/fbrnc">Twitter</a> or check out my stuff on <a href="https://github.com/fbrnc">GitHub</a>.</p>
+            </div>
+</div>
+<div class="sidebar-content sidebar-certifications">
+    <h4>Certifications</h4>
+    <ul>
+        <li>
+            <img src="../../../user/themes/antimatter/images/cert/Solutions-Architect-Associate.png" alt="AWS Certified Solutions Architect - Associate"/>
+        </li>
+        <li>
+            <img src="../../../user/themes/antimatter/images/cert/Developer-Associate.png" alt="AWS Certified Developer - Associate"/>
+        </li>
+        <li>
+            <img src="../../../user/themes/antimatter/images/cert/SysOps-Administrator-Associate.png" alt="AWS Certified SysOps Administrator - Associate"/>
+        </li>
+        <li>
+            <a href="https://magento.com/blog/magento-news/meet-2016-magento-masters-mentors">
+                <img src="../../../user/themes/antimatter/images/cert/magento_master_2016.png" alt="Magento Masters 2016"/>
+            </a>
+        </li>
+        <li>
+            <a href="http://www.magentocommerce.com/certification/directory/dev/65753/">
+                <img src="../../../user/themes/antimatter/images/cert/magento_certified_developer_plus.png" alt="Magento Certified Developer Plus"/>
+            </a>
+        </li>
+        <li>
+            <a href="http://www.magentocommerce.com/certification/directory/dev/65753/">
+                <img src="../../../user/themes/antimatter/images/cert/frontend_developer.png" alt="Magento Certified Frontend Developer"/>
+            </a>
+        </li>
+        <li>
+            <a href="http://typo3.org/certification/about-the-certification/certified-typo3-cms-integrator-listing/show/branca-fabrizio/">
+                <img src="../../../user/themes/antimatter/images/cert/TYPO3-Certified-Integrator-black-140.png" alt="TYPO3 Certified Integrator"/>
+            </a>
+        </li>
+        <li>
+            <a href="http://www.zend.com/en/services/certification/zend-certified-engineer-directory#ClientCandidateID=ZEND009995&cid=0">
+                <img src="../../../user/themes/antimatter/images/cert/php5_zce_logo_new.gif" alt="Zend Certified Engineer"/>
+            </a>
+        </li>
+    </ul>
+</div>
+<div class="sidebar-content sidebar-tags">
+    <h4>Popular Tags</h4>
+    
+<span class="tags">
+                    <a class="" href="../../../tag%253AGallery.html">Gallery</a>
+                    <a class="" href="../../../tag%253AMagento.html">Magento</a>
+                    <a class="" href="../../../tag%253ADevelopment.html">Development</a>
+                    <a class="" href="../../../tag%253ATYPO3.html">TYPO3</a>
+                    <a class="" href="../../../tag%253APhotography.html">Photography</a>
+                    <a class="" href="../../../tag%253ASonstiges.html">Sonstiges</a>
+                    <a class="" href="../../../tag%253A30&#32;day&#32;photo&#32;challenge.html">30 day photo challenge</a>
+                    <a class="" href="../../../tag%253APfadfinder.html">Pfadfinder</a>
+                    <a class="" href="../../../tag%253ACaching.html">Caching</a>
+                    <a class="" href="../../../tag%253AAWS.html">AWS</a>
+                    <a class="" href="http://fbrnc.net/tag:Flash/Actionscript">Flash/Actionscript</a>
+                    <a class="" href="../../../tag%253APortfolio.html">Portfolio</a>
+                    <a class="" href="../../../tag%253ACloudFormation.html">CloudFormation</a>
+                    <a class="" href="../../../tag%253AVarnish.html">Varnish</a>
+                    <a class="" href="../../../tag%253ALambda.html">Lambda</a>
+                    <a class="" href="../../../tag%253AHome.html">Home</a>
+                    <a class="" href="../../../tag%253ABücher.html">Bücher</a>
+                    <a class="" href="../../../tag%253APresentation.html">Presentation</a>
+                    <a class="" href="../../../tag%253ADesign.html">Design</a>
+                    <a class="" href="../../../tag%253AOpen&#32;Source.html">Open Source</a>
+                    <a class="" href="../../../tag%253AStudium.html">Studium</a>
+                    <a class="" href="../../../tag%253ADeployment.html">Deployment</a>
+                    <a class="" href="../../../tag%253AOpsWorks.html">OpsWorks</a>
+                    <a class="" href="../../../tag%253AMeetup.html">Meetup</a>
+                    <a class="" href="../../../tag%253AKISS.html">KISS</a>
+                    <a class="" href="../../../tag%253ASNS.html">SNS</a>
+                    <a class="" href="../../../tag%253AMicroservices.html">Microservices</a>
+                    <a class="" href="../../../tag%253AArchitecture.html">Architecture</a>
+                    <a class="" href="../../../tag%253AKinesis.html">Kinesis</a>
+                    <a class="" href="../../../tag%253ASQS.html">SQS</a>
+                    <a class="" href="../../../tag%253AWorkflow.html">Workflow</a>
+                    <a class="" href="../../../tag%253AJMeter.html">JMeter</a>
+                    <a class="" href="../../../tag%253AGrav.html">Grav</a>
+                    <a class="" href="../../../tag%253AInfrastructure&#32;as&#32;Code.html">Infrastructure as Code</a>
+                    <a class="" href="../../../tag%253ADevOps.html">DevOps</a>
+                    <a class="" href="../../../tag%253AVideos.html">Videos</a>
+                    <a class="" href="../../../tag%253ALightroom.html">Lightroom</a>
+                    <a class="" href="../../../tag%253AScaling.html">Scaling</a>
+                    <a class="" href="../../../tag%253ATricks.html">Tricks</a>
+                    <a class="" href="../../../tag%253AMPMD.html">MPMD</a>
+                    <a class="" href="../../../tag%253ACache.html">Cache</a>
+                    <a class="" href="../../../tag%253ACMS.html">CMS</a>
+                    <a class="" href="../../../tag%253APerformance.html">Performance</a>
+                    <a class="" href="../../../tag%253AGit.html">Git</a>
+    </span>
+</div>
+<div class="sidebar-content sidebar-archives">
+    <h4>Archives</h4>
+	<ul class="archives">
+
+
+                    </ul><ul class="archives">
+        <li class="caption">2016</li>
+        <li>
+        <a href="../../../month%253Amay_2016.html" title="May 2016">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2016.html" title="March 2016">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajan_2016.html" title="January 2016">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2015</li>
+        <li>
+        <a href="../../../month%253Aoct_2015.html" title="October 2015">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2015.html" title="June 2015">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2015.html" title="April 2015">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2014</li>
+        <li>
+        <a href="../../../month%253Adec_2014.html" title="December 2014">
+                <span class="label">5</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2014.html" title="November 2014">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2014.html" title="May 2014">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2014.html" title="March 2014">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2014.html" title="February 2014">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2013</li>
+        <li>
+        <a href="../../../month%253Adec_2013.html" title="December 2013">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2013.html" title="August 2013">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2013.html" title="July 2013">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2013.html" title="May 2013">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2013.html" title="April 2013">
+                <span class="label">10</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2013.html" title="March 2013">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2013.html" title="February 2013">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2012</li>
+        <li>
+        <a href="../../../month%253Adec_2012.html" title="December 2012">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2012.html" title="November 2012">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2012.html" title="October 2012">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2012.html" title="September 2012">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2012.html" title="August 2012">
+                <span class="label">7</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2012.html" title="July 2012">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2012.html" title="June 2012">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2012.html" title="May 2012">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2012.html" title="April 2012">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2012.html" title="March 2012">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2012.html" title="February 2012">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2011</li>
+        <li>
+        <a href="../../../month%253Adec_2011.html" title="December 2011">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2011.html" title="November 2011">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2011.html" title="October 2011">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2011.html" title="September 2011">
+                <span class="label">17</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2011.html" title="August 2011">
+                <span class="label">26</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2011.html" title="July 2011">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2011.html" title="June 2011">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2011.html" title="May 2011">
+                <span class="label">9</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2011.html" title="April 2011">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2011.html" title="March 2011">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2011.html" title="February 2011">
+                <span class="label">9</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2010</li>
+        <li>
+        <a href="../../../month%253Adec_2010.html" title="December 2010">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2010.html" title="October 2010">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2010.html" title="August 2010">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2010.html" title="July 2010">
+                <span class="label">6</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2010.html" title="June 2010">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2010.html" title="April 2010">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2010.html" title="March 2010">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2010.html" title="February 2010">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2009</li>
+        <li>
+        <a href="../../../month%253Adec_2009.html" title="December 2009">
+                <span class="label">7</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2009.html" title="November 2009">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2009.html" title="October 2009">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2009.html" title="September 2009">
+                <span class="label">6</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2009.html" title="August 2009">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2009.html" title="July 2009">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2009.html" title="June 2009">
+                <span class="label">5</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2009.html" title="May 2009">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2009.html" title="February 2009">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajan_2009.html" title="January 2009">
+                <span class="label">5</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2008</li>
+        <li>
+        <a href="../../../month%253Adec_2008.html" title="December 2008">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2008.html" title="November 2008">
+                <span class="label">11</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2008.html" title="August 2008">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2008.html" title="May 2008">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2008.html" title="April 2008">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2008.html" title="March 2008">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2008.html" title="February 2008">
+                <span class="label">7</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajan_2008.html" title="January 2008">
+                <span class="label">10</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2007</li>
+        <li>
+        <a href="../../../month%253Adec_2007.html" title="December 2007">
+                <span class="label">25</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2007.html" title="November 2007">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2007.html" title="October 2007">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2007.html" title="September 2007">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2007.html" title="June 2007">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2007.html" title="May 2007">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2007.html" title="February 2007">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajan_2007.html" title="January 2007">
+                <span class="label">7</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2006</li>
+        <li>
+        <a href="../../../month%253Adec_2006.html" title="December 2006">
+                <span class="label">5</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2006.html" title="November 2006">
+                <span class="label">14</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2006.html" title="October 2006">
+                <span class="label">9</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2006.html" title="September 2006">
+                <span class="label">7</span>
+                </a>
+    </li>
+</ul>
+</div>
+			</div>
+		</div>
+	
+                                    
+        </section>
+        
+                <footer id="footer">
+            <div class="totop">
+                <span><a href="make-your-magento-store-fly-using-varnish.html#" id="toTop"><i class="fa fa-arrow-up"></i></a></span>
+            </div>
+            <p>Powered by <a href="http://getgrav.org">Grav</a>.</p>
+            <p>
+                <a href="../../../blog.atom.html"><i class="fa fa-rss-square"></i> Atom 1.0</a> |
+                <a href="../../../blog.rss.html"><i class="fa fa-rss-square"></i> RSS</a> |
+                <a href="http://fbrnc.net/sitemap">Sitemap</a>
+            </p>
+        </footer>
+            </div>
+    <div class="sb-slidebar sb-left sb-width-thin">
+        <div id="panel">
+        
+<ul class="navigation">
+                                    <li class="active">
+                <a href="../../../index.html">
+                                        Blog
+                </a>
+            </li>
+                                <li class="">
+                <a href="../../../privacy-policy.html">
+                                        Privacy Policy
+                </a>
+            </li>
+                                <li class="">
+                <a href="../../../contact.html">
+                                        Contact
+                </a>
+            </li>
+                    </ul>
+
+        </div>
+    </div>
+            
+        <script>
+        $(function () {
+            $(document).ready(function() {
+              $.slidebars({
+                hideControlClasses: true,
+                scrollLock: true
+              });
+            });
+        });
+        </script>
+    </body>
+</html>
+<!-- Generated: 2016-07-24T11:09:21+02:00 -->

@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="utf-8" />
+    <title>Some thoughts on SUPER-scaling Magento, and a little bit of everything else... | Fabrizio Branca</title>
+    <meta name="generator" content="GravCMS" />
+<meta name="description" content="Web Development" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="icon" type="image/png" href="http://fbrnc.net/user/themes/antimatter/images/favicon.png" />
+    <link rel="canonical" href="http://fbrnc.net/blog/2015/10/super-scaling-magento" />
+
+                                                            
+                        <link href="https://fbrnc.net/assets/69aec95887701d23e4d88f5cc08d450b.css?g-db0a965f" type="text/css" rel="stylesheet" />
+
+
+                                                                            <script src="https://fbrnc.net/assets/0ce5b591987de495cd9ba62b91568c73.js?g-db0a965f" type="text/javascript" ></script>
+
+
+</head>
+<body id="top" class="">
+    <div id="sb-site">
+                <header id="header">
+
+            <div id="logo">
+                <h3><a href="https://fbrnc.net/"><span class="firstline">Fabrizio</span><span class="secondline">Branca
+            </div>
+            <div id="navbar">
+                                                
+<ul class="navigation">
+                                    <li class="active">
+                <a href="https://fbrnc.net/">
+                                        Blog
+                </a>
+            </li>
+                                <li class="">
+                <a href="https://fbrnc.net/privacy-policy">
+                                        Privacy Policy
+                </a>
+            </li>
+                                <li class="">
+                <a href="https://fbrnc.net/contact">
+                                        Contact
+                </a>
+            </li>
+                    </ul>
+
+                                <span class="panel-activation sb-toggle-left navbar-left menu-btn fa fa-bars"></span>
+            </div>
+
+        </header>
+        
+        
+                <section id="body" class="">
+            					
+<div id="breadcrumbs" itemscope itemtype="http://data-vocabulary.org/Breadcrumb">
+                            <a href="https://fbrnc.net/" itemprop="url"><span itemprop="title">Blog</span></a>
+            <i class="fa fa-angle-right"></i>
+                                <a href="https://fbrnc.net/blog/2015" itemprop="url"><span itemprop="title">2015</span></a>
+            <i class="fa fa-angle-right"></i>
+                                <a href="https://fbrnc.net/blog/2015/10" itemprop="url"><span itemprop="title">10</span></a>
+            <i class="fa fa-angle-right"></i>
+                                                <span itemprop="title">Some thoughts on SUPER-scaling Magento, and a little bit of everything else...</span>
+                        </div>
+				
+		<div class="blog-content-item grid pure-g-r">
+			<div id="item" class="block pure-u-2-3">
+ 			    <div class="list-item">
+
+    <div class="list-blog-header">
+        <span class="list-blog-date">
+            <span>14 Oct</span>
+            <em>2015</em>
+        </span>
+        <h2><a href="super-scaling-magento.html" class="post-title">Some thoughts on SUPER-scaling Magento, and a little bit of everything else...</a></h2>
+                <span class="tags">
+                        <a href="https://fbrnc.net/tag:Magento">Magento</a>
+                        <a href="https://fbrnc.net/tag:AWS">AWS</a>
+                        <a href="https://fbrnc.net/tag:Scaling">Scaling</a>
+                    </span>
+                
+    </div>
+
+    <div class="list-blog-padding">
+            <p><p><em>Here are some early thoughts about this and that. The more I think about it the clearer some of the things become. And still there are hundreds of open questions. Follow me through this journey trying to figure out what's the right thing to do for our next big project...</em></p>
+
+<h3>SUPER-scaling</h3>
+<p>We're currently kick-starting a Magento project with some very interesting (read: challenging) requirements regarding performance and scalability:</p>
+<ul>
+<li>up to 1000 "reservations"/sec (add to cart with inventory reservation)</li>
+<li>up to 30 orders/sec (and we were proud of our <a href="http://www.slideshare.net/aoemedia/magento-imagine-2013fabriziobranca/14">10 orders/sec</a> back then...) </li>
+<li>2 million products</li>
+</ul>
+<p>Let's face it, we won't get very far with a pure LAMP stack. Also, to be honest I'm not sure how much public-facing Magento will be left when we're done. Here are some of <a href="https://twitter.com/fbrnc/status/642196423002320896">my very early thoughts on this</a> that sparked a lot of conversations both online and offline: </p>
+<p><a rel="lightbox" data-width="1024" data-height="768" href="../../../images/b/3/8/2/8/b3828c244fc68e75eab35308b65faf0b174e74a8-ccf0910201500000.jpeg"><img src="../../../user/pages/01.blog/2015/10/01.super-scaling-magento/CCF09102015_00000.jpg" /></a></p>
+<p>I've been thinking a lot about how we've been doing things in the past, what <a href="http://www.slideshare.net/aoepeople/highperformance-magento-in-the-cloud/40">worked well</a> and what didn't, how we provisioned server, how we <a href="http://www.slideshare.net/aoemedia/magento-imagine-2013fabriziobranca/14">deployed new builds</a> and how we <a href="http://www.slideshare.net/aoepeople/continuous-integration-and-deployment-patterns-for-magento">managed our CI/CD process</a>. </p>
+<p>We've been using <a href="https://aws.amazon.com/opsworks/">AWS OpsWorks</a> a lot in the past and I do really like it (although there are some <a href="https://twitter.com/fbrnc/status/652903522426445824">things I don't like</a>, but that's going to be a separate blog post...). But while reflecting the requirements of this current project and looking at a huge mind map of various concepts, technologies and ideas we came up with, one thing becomes clear to me: OpsWorks and standard Magento might not be the best fit. And here's why:</p>
+<h3>Microservices vs. Monolith</h3>
+<p>Whatever we'll come up with, we have to learn to move away from the idea of having a set of servers that do <em>something</em> with a request. And after all this is <a href="http://www.rightbrainnetworks.com/blog/why-an-ec2-instance-isnt-a-server/">what AWS is all about</a>. In addition to (virtual) servers now there is also the popular containers concept and the highly interesting concept of not caring about infrastructure in the first place by using <a href="https://aws.amazon.com/lambda/">AWS Lambda</a>.
+In any case, we need to stop thinking "servers" and start thinking "services" instead. There's a high chance that in the first phase of this project the various services continue to be implemented in a monolith app (Magento) running on a set of auto-scalable EC2 instances, but that's a different story. Still, I wouldn't call it "microservices" (yet), at this point it's going to be more "microservice-ish", but with clearly defined boundaries and interfaces (REST) that should make it easier to decouple the services/components after day one.
+The various services could be combined seamlessly into an API Gateway (e.g. using <a href="https://aws.amazon.com/api-gateway/">AWS API Gateway</a> or seamlessly integrated into our Varnish layer that also takes care of caching and load balancing...)</p>
+<p>Here's another first draft of the services that - as a whole - could represent the e-commerce domain implemented natively on Magento or alternatively "mapped" to other technologies (with or without Magento in the mix)</p>
+<ul>
+<li>session service</li>
+<li>account service</li>
+<li>cart service</li>
+<li>order service (place orders)</li>
+<li>order archive/history/status service</li>
+<li>stock service</li>
+<li>catalog service</li>
+<li>catalog price service</li>
+<li>cart price service (including campaigns, coupons,...)</li>
+<li>search service (also renders category pages)</li>
+<li>cms service</li>
+</ul>
+<p><a rel="lightbox" data-width="1024" data-height="768" href="../../../images/e/0/4/2/d/e042d28a38b84989995c0cfe0cbccc5ac91e5d45-services.jpeg"><img src="../../../user/pages/01.blog/2015/10/01.super-scaling-magento/services.jpg" /></a></p>
+<h3>Why Microservices? SOA? Another buzzword, again?</h3>
+<p>"Microservices" is a buzzword these days, for sure. But I think the ideas behind it are important (I'm not saying they're ground-breaking and new...!). These are the main reasons why I think an architecture based on top of the idea of microservices could be a good fit for our project:</p>
+<ul>
+<li>Different services are being implemented by different teams at different points in time. </li>
+<li>Decoupling those and agreeing on an API upfront will allow everybody to do their part without being blocked by external dependencies.</li>
+<li>Running the services separately from each other allows us to detect bottlenecks faster and go back and scale and tune the different "functional units" separately.</li>
+<li>The different services might require different technologies. While we might pick a queue to process orders asynchronously after a quick synchronous check, we'll probably go for a lightweight NoSQL database to process cart operations faster and at scale. The product catalog on the other hand needs to be able to process (CRUD) a large amount of data in an acceptable amount of time (that's not necessarily a strength of Magento's native EAV implementation of the product catalog... :)</li>
+</ul>
+<h3>Phase 1: Initial Implementation in Magento</h3>
+<p>So how does Magento fit into this picture? We love Magento for what it is and ripping out all these services basically equals to re-implementing most of Magento's functionality. That doesn't sound like a smart plan. </p>
+<p>To begin with we'll focus on defining clear APIs, both facing outside (REST) and inside (service classes). <a href="http://devdocs.magento.com/guides/m1x/api/rest/introduction.html">Magento's REST API "framework"</a> is OK, and a good starting point. In fact we already started <a href="https://github.com/AOEpeople/Aoe_CartApi">exposing the cart features into a clean REST API</a> for a different project.</p>
+<p>These services should still be name-spaced (for example <code>cart-service.example.com</code> or <code>example.com/service/cart</code>) but would all point to the same Magento instances being a monolith. (I don't think using Magento modules does really count for NOT being a monolith...)</p>
+<p>By carefully planning on how to expose functionality AND how this is consumed internally it should be easy to decouple that piece of the monolith later when we experience that we need an alternate solution. </p>
+<p>Another approach could be to treat them as if they were totally separate and implement every inter-service communication via HTTP(S). I'm not sure if the overhead of potentially many nested HTTP requests justifies the cleaner architecture here. After all I tend to opt for the pragmatic solution. Way too often have I experienced <a href="https://en.wikipedia.org/wiki/You_aren't_gonna_need_it">YAGNI</a>.</p>
+<p><a rel="lightbox" data-width="1024" data-height="768" href="../../../images/6/8/7/f/9/687f9428685621b02e1380d5750b0e810e14f183-phase1.jpeg"><img src="../../../user/pages/01.blog/2015/10/01.super-scaling-magento/phase1.jpg" /></a></p>
+<p><strong>Quick side note:</strong> <a href="http://devdocs.magento.com/guides/v2.0/extension-dev-guide/service-contracts/service-contracts.html">Service contracts</a> and a lot more functionatity exposed in the <a href="http://devdocs.magento.com/guides/v2.0/rest/bk-rest.html">REST API</a> make Magento 2 an interesting (future) platform for this project. Since we'll do this with Magento 1, we'll have to implement some of the missing REST APIs ourselves.</p>
+<h3>API Gateway</h3>
+<p>The next question is: Do we need an API Gateway? Do we need another piece of infrastructure were all requests come in first and then get dispatched to their respective endpoints? What would happen if browsers and mobile apps would directly hit every service?</p>
+<p>I don't think direct access is a good idea, but on the other hand I also don't think the API Gateway needs to be too smart. Here are some possible options:</p>
+<ul>
+<li>No API Gateway</li>
+<li><a href="https://aws.amazon.com/api-gateway/">AWS API Gateway</a>: This would also allow us to replace some of the functionality with Lambda functions down to road.</li>
+<li>A ESB solution like <a href="https://www.mulesoft.com/">MuleSoft</a>.</li>
+<li>Varnish (or Nginx?)</li>
+</ul>
+<p><strong>Varnish?</strong> Yes, at this point I actually consider this a very good solution:</p>
+<ul>
+<li>We'll have a set of Varnish servers in place anyway that will take care of caching and load balancing.</li>
+<li>Since most of these services are probably going to be very lightweight (and may be implemented as a Magento module with a REST API) they would have to care about caching and load balancing internally. </li>
+<li>Varnish - acting as a proxy - would be able do a great job abstracting from the actual backends, unifying them into a single url or hostname pattern and allowing to replace services while maintaining a consistent public facing interface.</li>
+<li>The solution would be easy to configure and maintain and since all Varnish does is processing and dispatching HTTP requests it would be clear that there's no magic happening inside this API Gateway. </li>
+<li>Also, it's free and open source and we'd be able to fully control it as part of our infrastructure.   </li>
+</ul>
+<h3>Rethinking functionality</h3>
+<p>Moving forward we'll be able to detect the bottleneck on a service-level. Separating the functionality from the beginning should make it easier to come up with alternative concepts and technologies for the different parts.
+As much as we love Magento, there are things Magento is really good at, and there are other things where Magento isn't.
+Here are some ideas of features that could/should be extracted and implemented with different technologies to improve performance and scalability:</p>
+<ul>
+<li><strong>Full page cache:</strong> While <a href="http://magento.com/products/enterprise-edition/marketing-and-merchandising">Magento EE</a>'s full page cache makes pages rendering significantly faster there are some major issues with it: 
+<ol>
+<li>FPC disables block caching which in some cases - where you'd like the share an expensive block on different pages - is counterproductive.</li>
+<li>FPC is not super simple to hole-punch.</li>
+<li>FPC will continue to hit an only slightly more lightweight version of Magento. Bootstrapping Magento and PHP in general are still significantly slower than not having Magento in the mix in the first place.
+So instead we prefer Varnish since it is not only super efficient and fast, but it also comes with a lot of nice extra features that come in handy for the rest of our infrastructure (load balancing, proxy,...)</li>
+</ol></li>
+<li><strong>Category pages:</strong> Rendering category pages in Magento can be really slow. Especially if there are many filters and facets in place. Most search products will easily outperform Magento's category pages and you'll get the extra benefit of having a unified user experience between search and catalog browsing when it comes to filtering and faceting. After all, the category tree is just another filter...</li>
+<li><strong>CMS content:</strong> Magento's native CMS features are very basic. So this isn't necessarily a performance or scalability issue, but more of a usability and feature issue. Pulling in content from a different source isn't a hard thing to do and if you're dealing with a lot of content it's probably worth the increased complexity of managing another system.</li>
+<li><strong>Image Rendering:</strong> Currently product images are rendered (resized,...) during the page rendering request in case that resized version isn't available locally. This will not only result in very slow response times when the product is being hit the first time (which happens if you have frequent product updates with new images), it also results in a ton of additional images that you'd have to share across all web nodes.
+Instead of actually rendering the image at the point in time we prefer generating a signed url that contains all processing instructions so that the rendering process can be decoupled and rendered in a different process. The result can then be cached locally or - using the correct HTTP header - you can leverage CloudFront to cache that image for you. We've already implemented this: <a href="https://github.com/AOEpeople/Aoe_LazyCatalogImages">Aoe_LazyCatalogImages</a>. </li>
+<li><strong>Price Engine:</strong> Product prices may change very frequently. Binding the prices to the rest of the product data and also including those prices in (cached) product single views and search results seems like a waste of resources, since caches have to be invalidated and products have to be re-indexed whenever prices change. Instead we're planning on replacing all price information by statically cacheable placeholders (both on product single views and in search results / category lists), and request the current prices in a separate HTTP call from a price engine and replace the placeholders client-side.
+This does not only affect catalog prices, but also actual prices in the cart (row totals and totals), taking coupons, sales rules, customer specific prices and tier prices into account. At this time it's not clear to me if this "<em>cart</em> price engine" and the "<em>catalog</em> price engine" are the same thing or should be separated into two services.</li>
+<li><strong>Stock Levels:</strong> Stock levels will probably change even more frequently than catalog product prices. Especially if you need to work with exact stock levels as opposed to only showing "In stock" or "Out of stock". Again this information should not be combined with cacheable product data, but retrieved from a separate service endpoint.
+Another aspect here is that your project might require cart reservations (reduce the available stock as soon as a customer puts an item into the cart and block this item for a given time until it will be automatically released again if not checked out). This makes the stock management significantly more complex. We definitely need this to be a separate service.  </li>
+<li><strong>Cart:</strong> Dealing with a lot of concurrent users (especially if the merchant is planning on doing flash sales) we'll most likely run into the MySQL database being a bottleneck. Some of the options we're currently exploring is to replace the storage layer (e.g. MongoDB, DynamoDB) for carts or even have a cart service that manages carts completely outside of Magento and will then "hand-over" the cart content to the checkout service while placing the order. </li>
+<li><strong>Order queue:</strong> A couple of years ago we worked hard on making Magento process 10 order/second for the Angry Birds webshop. Now we have to triple this! I don't think we'll be able to handle this with Magento. There's just way too much going on during the checkout.
+Having a <strong>custom JavaScript-based checkout</strong> that interacts with Magento via REST services definitely already helps (we just did that for <a href="https://anki.com">anki.com</a>, but now I think we'll have to go one step further. The idea is to detect every reason why placing an order would fail in a lightweight, synchronous "pre-check" (this may or may not be Magento) and then push the order into a queue (SQS). A number of Magento worker instances will then process the orders asynchronously and turn them into "real" Magento orders.  </li>
+<li><strong>Customer management:</strong> This is not so much a performance or scalability requirement, but  probably a pretty nice thing to have in place for this project's "Omnichannel" needs. There will be a mobile app for sure and even beyond that the merchant is planning on integration various other channels (don't ask, I have no idea. Although I'd love to build an <a href="http://www.amazon.com/b?node=10667898011">Amazon Dash Button</a>-like IoT device... :). Having the customers managed in <a href="https://aws.amazon.com/cognito/">AWS Cognito</a> looks worth researching.</li>
+</ul>
+<h3>EAV vs. Schema-less</h3>
+<ul>
+<li><strong>Product catalog:</strong> 2 million products. Importing them, running all indexes and refreshing all caches on it's own will most likely last way to long. And then we'll most likely run into many more problems simple because of this massive amount of products...
+While I understand why Magento uses <a href="https://en.wikipedia.org/wiki/Entity%E2%80%93attribute%E2%80%93value_model">EAV</a> to store all products and attribute, I've always been wondering if this <em>actually</em> is a smart idea, especially when taking to complexity and the poor performance into account (specifically the layered navigation,...).
+I wonder if the answer to "flexibility" is "having a schema-less storage" instead of EAV. Especially if search and category pages are being processed by software that doesn't care about a formal schema in the first place (Solr,...).
+And this is exactly what we're planning on doing: Instead of using Magento's product tables we'll come up with an <strong>alternative storage</strong>, that basically is a simple key-value store holding a JSON representation of the product including all its attributes. We haven't decided yet if this is another MySQL table (possibly on a different database server) or - a lot more likely - a NoSQL solution like MongoDB, Redis (ElastiCache) or DynamoDB.
+I'm sure we'll be able to import millions of products in a few minutes and by bypassing Magento's product tables we wouldn't run into any indexing issues.
+From our alternative storage we could easily push all information to whatever search solution we pick and this could be the backend storage for the catalog service that will provide all information to the other parts of the infrastructure that require access to product information.
+As soon as a product is being added to the cart, we would then <strong>create a placeholder product on-the-fly</strong> in case this product doesn't already exist in the Magento product tables. This product would be a minimal lightweight representation of the real product allowing Magento to seamlessly work with quotes and orders not having to know of the products outside of Magento.
+Via cron we would then delete the least recently used products from Magento's tables to keep the small and clean. </li>
+</ul>
+<h3>Leveraging AWS</h3>
+<p>AWS is much more than virtual servers. Especially in the last couple of months and weeks, several highly interesting services have been added. </p>
+<p>There are a couple of <strong>"drop-in" replacements</strong> that are trivial to integrate into our infrastructure and come with the benefit of being easy to, "(inherently) fault tolerant", and don't require any administration:</p>
+<ul>
+<li><strong>Database:</strong> RDS with MySQL, <a href="https://aws.amazon.com/rds/mariadb/">MariaDB</a> or <a href="https://aws.amazon.com/rds/aurora/">Aurora</a></li>
+<li><strong>Cache+Sessions:</strong> <a href="https://aws.amazon.com/elasticache/">ElastiCache</a> (Redis)</li>
+<li><strong>Cache+Sessions:</strong> <a href="https://aws.amazon.com/dynamodb/">DynamoDB</a>. Not exactly drop-in, but it should be easy to add a new cache backend and session handler. Here's a highly experimental DynamoDB session handler I wrote a couple of weeks ago: https://github.com/AOEpeople/Aoe_DynamoDbSession</li>
+<li><strong>Shared "Filesystem":</strong> <a href="https://aws.amazon.com/efs/">Elastic File System</a> (NFS compatible) or S3 (Don't try to mount it since this is terrible slow. Instead you need a custom solution like <a href="https://github.com/AOEpeople/Aoe_AmazonCdn">Aoe_AmazonCDN</a> (which only provides support for product images and cms images))</li>
+<li><strong>Emails:</strong> <a href="https://aws.amazon.com/ses/">SES</a></li>
+<li><strong>CDN:</strong> <a href="https://aws.amazon.com/cloudfront/">CloudFront</a></li>
+</ul>
+<p>Then there are some <strong>higher level</strong> services that might be worth checking out, but require some integration effort:</p>
+<ul>
+<li><strong>Customer management:</strong> <a href="https://aws.amazon.com/cognito/">AWS Cognito</a></li>
+<li><strong>Search/Product lists:</strong> <a href="https://aws.amazon.com/elasticsearch-service/">AWS ElasticSearch <strong>Service</strong></a></li>
+</ul>
+<p>And then of course there are many highly useful <strong>building blocks</strong> that we'll probably be using within some of the services:</p>
+<ul>
+<li><strong>Queue:</strong> <a href="https://aws.amazon.com/sqs/">SQS</a></li>
+<li><strong>Catalog storage backend / Cart storage backend:</strong> <a href="https://aws.amazon.com/dynamodb/">DynamoDB</a></li>
+<li>...</li>
+</ul>
+<h3>Going Headless</h3>
+<p>"<a href="https://www.ostraining.com/blog/drupal/what-is-headless-drupal/">Headless Drupal</a>" currently seems to be a thing in the Drupal community. And basically that's exactly what we're trying to do with here with Magento (and again: to some degree already <em>did</em> for <a href="https://anki.com">anki.com</a>: "<strong>Headless Magento</strong>".</p>
+<p>The idea is to design everything <strong>"services-oriented" first</strong> instead of "HTML oriented". This has a ton of advantages:</p>
+<ul>
+<li>The public-facing UI interacts with the "functionality" over clearly defined APIs</li>
+<li>It's a lot easier to decouple the UI development from the developing the backend functionality. Usually different teams with very different skill sets work in these areas and now there's a lot less overlap of the parts and files these teams are touching</li>
+<li>It's a log easier to decouple/replace/scale the backends since - when managed using an API gateway - the frontend might not even notice that the backend has been scaled up or replaced.</li>
+<li>Browsers and apps are pretty capable and performant these days. Why not leverage this fact and offload some of the display and UI logic into the client. </li>
+<li>Classic page reload patterns are outdated: Why reload the full cart page only show the same page with an increased "items in cart" counter and a success message? This is a good example of how the current page can be updated with minimal communication between the frontend and the backend and without requiring the backend to render a full page.</li>
+<li>By exposing all functionality via REST APIs you can easily reuse the same API for non-HTML frontends (mobile apps, IoT,...)</li>
+<li>Leveraging the clients local storage. There's some information that doesn't change between two requests like the username of the current user ("Welcome, John...") or the number of items in cart. This information can be stored locally (in localStorage or in cookies) and injected into static cached pages without any backend interaction. After all, when the login status or the cart content changes we're already talking to the backend and can easily update our local storage with the updated response from the dynamic actions.</li>
+</ul>
+<h3>Vision</h3>
+<p>I'd love to see a fully "headless" and standardized/generic "e-Commerce REST API" that could then be implemented by various backends like Magento or "<a href="https://github.com/jaws-framework/JAWS">JAWS</a>-Commerce" (which is not a thing. Yet. :) and by different frontends (mobile App SDKs, HTML themes/frameworks,...).
+Again, the implementation of this API should then be a collection of micro-services behind an API Gateway, possibly with "adapters" to other services that already offer parts of the required functionality like AWS Cognito or ElasticSearch.</p>
+<h3>AWS Lambda / AWS API Gateway / JAWS</h3>
+<p>One of the most exciting technologies this year is <a href="https://aws.amazon.com/lambda/">AWS Lambda</a>. Lambda allows you to deploy little "chunks" of functionality without having to care about any infrastructure while being super scalable. At the same time it's really cheap since you only pay for the actual requests. </p>
+<p>I can see Lambda functions being a perfect fit for a <strong>checkout micro-service</strong> receiving order data and storing it into a queue or <strong>managing a user's cart</strong> (add to cart, update cart, get cart content).
+Depending on how simple the business model is and how far you want to move away from Magento I could also see a highly scalable <strong>price engine</strong> being implemented in Lambda (of course with the side effect that you'll lose the ability to easily interact with Magento for sales rules and other dynamic pricing Magento already offers out-of-the box). </p>
+<p>At this point we'd be bypassing a lot of Magento's features, but having Magento in the mix probably continues to make sense since the Magento core platform and the ecosystem offer much more than managing carts and rendering a checkout UI.</p>
+<p>So far I've only been playing a little bit with Lambda functions, but I believe the <a href="https://github.com/jaws-framework/JAWS">JAWS</a> project claiming to be "the monstrously scalable serverless framework" is a real game-changer by doing all the hard and tedious work of managing the API Gateway configuration and Lambda functions for you while you can focus on writing code.</p>
+<p>Btw, it <em>is</em> possible to <a href="https://github.com/databank/aws-lambda-php-template">run PHP inside Lambda functions</a> (although I doubt this is a good idea), and with that in mind you could even create a tiny-version of Magento (by only keeping the files relevant for your current action - strace can help you out there...) and run that inside a Lambda function. Again, I don't think this is a good idea, but probably a fun experiment.  </p>
+<h3>Immutable Infrastructure</h3>
+<p>I've been playing with <a href="https://aws.amazon.com/codedeploy/">AWS CodeDeploy</a> and while I like the idea I'm wondering if this is the right thing to do in the first place:
+I don't think you should ever deploy a new build to an existing server these days. This comes back to one of the core messages here: <a href="https://blog.engineyard.com/2014/pets-vs-cattle">pets vs. cattle</a>. </p>
+<p>We should never have to care about deploying a new build to an existing server. Instead deploying a build is what happens while spinning up a new server instance. And when you need a new build you'll spin up a new instances. Since this is so simple and fast there's really no reason why we should invest so much energy in getting a new build on a server in an elegant way.</p>
+<p>Of course, AWS CodeDeploy does not only take care of copying the build to the target servers, but it also orchestrates the deployment. But again, that part can probably be done with existing technologies or even better: be immutable on a higher scale and do not only add/replace instances in an existing infrastructure, but spin everything up from scratch (new auto-scaling groups, load balancers - and figure out how to solve the pre-warming problem nicely -, ...) </p>
+<p>So they keyword here is "immutable": Once we created anything, we'll never touch/update it. Instead we'll replace it with something new. This way don't have to care about the pre-existing state.</p>
+<h3>Blue/Green vs. Rolling Updates</h3>
+<p>OK, let's talk about deployments for a second.
+It's clear that we do want zero-downtime deployments, but there are a couple of ways to get there: </p>
+<h4>Question 1: Atomic switch or rolling updates?</h4>
+<p>Is it OK, if we have user hitting the new build and other users hitting the old build at the same time? Given that we only have backwards/forward (depends on your point of view) compatible database changes in place (If you don't then a zero-downtime deployment is very unlikely anyway. And in reality this isn't happening very often - except for major Magento updates) this shouldn't be a problem.
+My gut feeling says that's a bad idea, but I've seen this work without any problems and I actually can't think of a good reason why we should not allow mixing builds for a short timeframe as long as the same user doesn't jump back and forth between builds (which is easy to implement by using sticky load balancer sessions - which again isn't always a good idea...)
+So, if this is OK we could simply do rolling updates by adding new servers with the new build and as we new instances become healthy remove the old instances up to the point where all servers have been replaced. Ansible has a <a href="https://t37.net/why-ansible-1-8-is-the-new-immutable-deployment-killer.html">nice solution</a> for this in place and that's basically what AWS CodeDeploy does depending on the strategy you choose.</p>
+<h4>Question 2: Horizontally or vertically blue/green?</h4>
+<p>Let's say we <strong>wanted</strong> to switch atomically (my preference). We do have two options here: </p>
+<ol>
+<li>We deploy the <strong>new build on the existing server instances in a new release</strong> folder that the current webroot is not pointing to and then switch the symlinks.
+This is what OpsWorks is doing behind the scenes, although OpsWorks doesn't really make sure that the switch happens synchronously after all releases are in place (and also if the deployment fails on one of the instances the other instances don't care and continue to serve the new release).</li>
+<li>We spin up new EC2 instances from scratch and deploy/install the package on those instances. This is the basic idea behind the "Immutable Infrastructure" since we'll never have to take the current state and a previous release into account, since we're already starting from scratch (or at least from a clearly defined state - in case you're baking your own AMIs).
+In this scenario the new EC2 instances will NOT be added to the currently active auto-scaling group. Instead a new auto-scaling group will be created <em>including</em> a new load balancer and then after everything is deployed and caches are being warmed up Route 53 will be updated to point to the new ELB. Since this switch isn't exposed to public DNS this will be an instant switch for all users.
+Once the new auto-scaling group is live the old one can be decommissioned.
+All these interactions can be easily scripted using a variety of tools.
+One of the problems here is that the new load balancer will not be warmed up unless that's part of what you do before switching. Depending on the current traffic not warming up the ELBs can be a problem and sadly it's a manual process to have <a href="http://aws.amazon.com/articles/1636185810492479#pre-warming">AWS pre-warm your load balancer for you</a>.
+Of course you could also gradually switch from the old ELB to the new using a <a href="http://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-policy.html">weighted routing policy</a>, but then again you'd mix the old and the new release.</li>
+</ol>
+<p><img src="../../../user/pages/01.blog/2015/10/01.super-scaling-magento/greenblue.jpg" /></p>
+<h3>Half-baked server images (AMIs)</h3>
+<p>Should provisioning a server really happen while spinning up an instance? This adds a significant amount of time before a new instance becomes healthy and in addition to that things occasionally do go wrong if there are external dependencies.
+On the other hand provisioning can be quick and easy and there is some benefit in controlling the provisioning in a single place directly before deploying the build and not having to deal with baking custom AMIs and managing them.
+The second question is - assuming we do want to build our own images: do we bake an image that's ready to go without any additional step? That means the current release is part of the image, deployed, installed and configured. This also means that baking images needs to be part of our CI process and will potentially happen multiple times per day...
+Since baking an AMI is not a super light-weight process and since I don't think the build and the server necessarily have to be "glued" together I feel the smartest thing to do is to "<a href="http://answersforaws.com/blog/2013/11/half-baked/">half-bake</a>" the images, so that they contain everything EXCEPT for the current build and add the build using a simple (CloudInit) script while starting the instance.</p>
+<p>Of course the images should also be build using a - separate - CI pipeline and the provisioning of the images should be reproducible and expressed in code. </p>
+<p>Another benefit of this approach would be that the AMI could be tuned independently (this includes: by different people/teams) from the regular build and deployment workflow.</p>
+<h3>Containers</h3>
+<p>Every week somebody is trying to pitch me the idea of containers in general and <a href="https://www.docker.com/">Docker</a> specifically.
+I have to admit: I don't have any real experience (but others on my team do).</p>
+<p>So far I've always had other topics on my "To-<em>Explore</em>" list that I wanted to dedicate time to before I was willing to dig into this technology.</p>
+<p>To be very honest, I don't know what's wrong with a world that <em>doesn't</em> use containers. I'm not seeing the problem that containers are trying to solve and with a clean virtualized infrastructure where the smallest entity is an EC2 instance I don't see how splitting your app into all these fine-grained parts makes things easier. After all I wouldn't run a MySQL server and a Redis instance on the same EC2 instances that runs the app either.</p>
+<p>I might be totally wrong on this and my hesitation probably simply originates from the fact that I haven't played with it yet. Amazon's <a href="https://aws.amazon.com/ecs/">Container Service</a> and the new <a href="https://aws.amazon.com/ecr/">Container Registry</a> definitely make this a lot more attractive than having to figure out everything from scratch. But still, what am I really missing out on by not using Docker?</p>
+<h3>Tools</h3>
+<p>I <em>kind-of-</em>like Chef. And our German team just switched to Puppet. But then again, I hear great things about Ansible. And do we even need any of those in the first place?</p>
+<p>There are hundreds of tools, approaches and concepts out there and there's a big overlap in functionality. And everybody claims they figured all out and their solution is the best.</p>
+<p>So here I am. Again. Trying to find the perfect toolchain for... <em>well, for what?</em></p>
+<p>What do I really want to do? Is this about setting up a full infrastructure or provisioning an individual server (like my local devbox)? Is this about managing deployments or orchestrating deployments that go beyond downloading something and moving files around on a single server?  </p>
+<p>AWS OpsWorks uses Chef. And that's OK, I guess. But since we'll most likely not be using OpsWorks for a project like this upcoming one we're free to choose.</p>
+<p>I feel in many cases Chef is simply too much. A couple of months back I spent a way too much time trying to get our devbox (Vagrant+VirtualBox+Ubuntu) back to work after there had been updates to the database cookbooks resulting in a big mess of broken dependencies between multiple cookbooks. At one point I decided that it's kind of silly to go through all that trouble only to have a databases created the "clean" way and a stripped all the database stuff out and I'm now creating the database with a simple shell command - still embedded in a chef cookbook. </p>
+<p>In so many cases we simply don't need this extra level of abstraction. After all we will not have to manage different platforms and try doing this using the same code base. </p>
+<p>I've played with the new <a href="http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/working-with-templates-cfn-designer.html">CloudFormation Designer</a> and although it makes working with CloudFormation templates only <em>slightly</em> more pleasant I really like it. But then again CloudFormation is only restoring a specific state and this isn't replacing a solid deployment strategy.</p>
+<p>Somebody else was suggesting <a href="https://terraform.io/">Terraform</a>. Researching their website this looks very interesting. But what's the benefit over CloudFormation? Why introduce another tool?</p>
+<p>I've played with CloudInit, and I'm suprised this isn't a lot more popular. Why even dealing with Chef, Puppet,... if you can <a href="http://cloudinit.readthedocs.org/en/latest/topics/examples.html">do so many things with CloudInit only</a>. But then again, what's the point trying to express everything in Yaml when you can just execute a shell script?</p>
+<p>You can probably see where this is going...</p>
+<p>I'm confused and I feel whatever tool I pick it's going to be the wrong decision.</p>
+<p>Also, I've been experimenting with simple PHP scripts using the <a href="https://aws.amazon.com/sdk-for-php/">AWS SDK for PHP</a> (PHP, simply because this is my "natural habitat". I refuse to accept that Ruby is "beautiful" :) to configure launch configurations, auto-scaling groups and spin up instances. And this works great! It's code, I don't have to learn anything new (and so doesn't my team) and it's provided by AWS. It doesn't really help me provision what's going on inside the boxes, but maybe I don't need it to do <em>everything</em> for me to be useful.</p>
+<p>Not sure if this is too naive, but I can easily spin up a very simple multi-server, auto-scaling Magento setup with very few lines of PHP and BASH and manage deployments the same way (<a href="http://magecasts.io/">magecasts.io</a> screencast coming up as soon as the conference season is over... :). What's wrong with that?</p>
+<h3>Decoupling</h3>
+<p>So, really most of these topics are instances of the same idea on different levels: <strong>"Decoupling things"</strong>.</p>
+<ul>
+<li>Decoupling services from each other</li>
+<li>Decoupling the frontend from the backend implementation</li>
+<li>Decoupling provisioning server instances from deploying builds</li>
+<li>Decoupling scaling from provisioning</li>
+<li>Decoupling the heavy lifting from the regular page request workflow</li>
+<li>Decoupling functionality from Magento</li>
+<li>...</li>
+</ul>
+<p>With all the open questions and the topics where I do have a clear idea one thing is certain: Breaking things into smaller, independent parts seems to only way make this elephant digestible: </p>
+<p><img src="../../../user/pages/01.blog/2015/10/01.super-scaling-magento/elephant.jpg" /></p></p>
+
+        <div class="share">
+            <span>Share via: </span>
+            <ul>
+                <li><a target="_blank" href="https://twitter.com/home?status=Some%20thoughts%20on%20SUPER-scaling%20Magento%2C%20and%20a%20little%20bit%20of%20everything%20else...%20http%3A%2F%2Ffbrnc.net%2Fblog%2F2015%2F10%2Fsuper-scaling-magento%20%2Fvia%20%40fbrnc">Twitter</a></li>
+                <li><a target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=http%3A%2F%2Ffbrnc.net%2Fblog%2F2015%2F10%2Fsuper-scaling-magento">Facebook</a></li>
+                <li><a target="_blank" href="https://plus.google.com/share?url=http%3A%2F%2Ffbrnc.net%2Fblog%2F2015%2F10%2Fsuper-scaling-magento">Google+</a></li>
+                <li><a target="_blank" href="mailto:?subject=Reading Recommendation&amp;body=Check out this article: Some thoughts on SUPER-scaling Magento, and a little bit of everything else... http%3A%2F%2Ffbrnc.net%2Fblog%2F2015%2F10%2Fsuper-scaling-magento by Fabrizio Branca .">Mail</a></li>
+            </ul>
+        </div>
+
+        <h4>Comments</h4>
+        <div class="enable_comments_notice">
+            <p>This website uses <a href="https://disqus.com">disqus</a> for the commenting functionality. In order to protect your privacy comments are <em>disabled by default</em>.</p>
+            <a id="enable_comments" href="super-scaling-magento.html#">Enable Comments</a>
+        </div>
+        <div id="disqus_thread"></div>
+        <script type="text/javascript">
+            var disqus_shortname = 'fbrnc';
+                    </script>
+
+    
+    </div>
+
+</div>
+			</div>
+			<div id="sidebar" class="block size-1-3 pure-u-1-3">
+				<div class="sidebar-content profile">
+    <div class="profile-image">
+        <img src="https://fbrnc.net/user/themes/antimatter/images/fabrizio_polaroid.png" alt="Fabrizio Branca"/>
+    </div>
+    <div class="profile-content">
+        <p><strong>Hi, I'm Fabrizio!</strong></p>
+        <p>I'm a web developer from San Francisco, CA and I work for <a href="http://www.aoe.com">AOE</a>.</p>
+        <p>Follow me on <a href="https://twitter.com/fbrnc">Twitter</a> or check out my stuff on <a href="https://github.com/fbrnc">GitHub</a>.</p>
+            </div>
+</div>
+<div class="sidebar-content sidebar-certifications">
+    <h4>Certifications</h4>
+    <ul>
+        <li>
+            <img src="https://fbrnc.net/user/themes/antimatter/images/cert/Solutions-Architect-Associate.png" alt="AWS Certified Solutions Architect - Associate"/>
+        </li>
+        <li>
+            <img src="https://fbrnc.net/user/themes/antimatter/images/cert/Developer-Associate.png" alt="AWS Certified Developer - Associate"/>
+        </li>
+        <li>
+            <img src="https://fbrnc.net/user/themes/antimatter/images/cert/SysOps-Administrator-Associate.png" alt="AWS Certified SysOps Administrator - Associate"/>
+        </li>
+        <li>
+            <a href="https://magento.com/blog/magento-news/meet-2016-magento-masters-mentors">
+                <img src="https://fbrnc.net/user/themes/antimatter/images/cert/magento_master_2016.png" alt="Magento Masters 2016"/>
+            </a>
+        </li>
+        <li>
+            <a href="http://www.magentocommerce.com/certification/directory/dev/65753/">
+                <img src="https://fbrnc.net/user/themes/antimatter/images/cert/magento_certified_developer_plus.png" alt="Magento Certified Developer Plus"/>
+            </a>
+        </li>
+        <li>
+            <a href="http://www.magentocommerce.com/certification/directory/dev/65753/">
+                <img src="https://fbrnc.net/user/themes/antimatter/images/cert/frontend_developer.png" alt="Magento Certified Frontend Developer"/>
+            </a>
+        </li>
+        <li>
+            <a href="http://typo3.org/certification/about-the-certification/certified-typo3-cms-integrator-listing/show/branca-fabrizio/">
+                <img src="https://fbrnc.net/user/themes/antimatter/images/cert/TYPO3-Certified-Integrator-black-140.png" alt="TYPO3 Certified Integrator"/>
+            </a>
+        </li>
+        <li>
+            <a href="http://www.zend.com/en/services/certification/zend-certified-engineer-directory#ClientCandidateID=ZEND009995&cid=0">
+                <img src="https://fbrnc.net/user/themes/antimatter/images/cert/php5_zce_logo_new.gif" alt="Zend Certified Engineer"/>
+            </a>
+        </li>
+    </ul>
+</div>
+<div class="sidebar-content sidebar-tags">
+    <h4>Popular Tags</h4>
+    
+<span class="tags">
+                    <a class="" href="https://fbrnc.net/tag:Gallery">Gallery</a>
+                    <a class="" href="https://fbrnc.net/tag:Magento">Magento</a>
+                    <a class="" href="https://fbrnc.net/tag:Development">Development</a>
+                    <a class="" href="https://fbrnc.net/tag:TYPO3">TYPO3</a>
+                    <a class="" href="https://fbrnc.net/tag:Photography">Photography</a>
+                    <a class="" href="https://fbrnc.net/tag:Sonstiges">Sonstiges</a>
+                    <a class="" href="https://fbrnc.net/tag:30&#32;day&#32;photo&#32;challenge">30 day photo challenge</a>
+                    <a class="" href="https://fbrnc.net/tag:Pfadfinder">Pfadfinder</a>
+                    <a class="" href="https://fbrnc.net/tag:Caching">Caching</a>
+                    <a class="" href="https://fbrnc.net/tag:AWS">AWS</a>
+                    <a class="" href="https://fbrnc.net/tag:Flash/Actionscript">Flash/Actionscript</a>
+                    <a class="" href="https://fbrnc.net/tag:Portfolio">Portfolio</a>
+                    <a class="" href="https://fbrnc.net/tag:CloudFormation">CloudFormation</a>
+                    <a class="" href="https://fbrnc.net/tag:Varnish">Varnish</a>
+                    <a class="" href="https://fbrnc.net/tag:Lambda">Lambda</a>
+                    <a class="" href="https://fbrnc.net/tag:Home">Home</a>
+                    <a class="" href="https://fbrnc.net/tag:B%C3%BCcher">Bücher</a>
+                    <a class="" href="https://fbrnc.net/tag:Presentation">Presentation</a>
+                    <a class="" href="https://fbrnc.net/tag:Design">Design</a>
+                    <a class="" href="https://fbrnc.net/tag:Open&#32;Source">Open Source</a>
+                    <a class="" href="https://fbrnc.net/tag:Studium">Studium</a>
+                    <a class="" href="https://fbrnc.net/tag:Deployment">Deployment</a>
+                    <a class="" href="https://fbrnc.net/tag:OpsWorks">OpsWorks</a>
+                    <a class="" href="https://fbrnc.net/tag:Meetup">Meetup</a>
+                    <a class="" href="https://fbrnc.net/tag:KISS">KISS</a>
+                    <a class="" href="https://fbrnc.net/tag:SNS">SNS</a>
+                    <a class="" href="https://fbrnc.net/tag:Microservices">Microservices</a>
+                    <a class="" href="https://fbrnc.net/tag:Architecture">Architecture</a>
+                    <a class="" href="https://fbrnc.net/tag:Kinesis">Kinesis</a>
+                    <a class="" href="https://fbrnc.net/tag:SQS">SQS</a>
+                    <a class="" href="https://fbrnc.net/tag:Workflow">Workflow</a>
+                    <a class="" href="https://fbrnc.net/tag:JMeter">JMeter</a>
+                    <a class="" href="https://fbrnc.net/tag:Grav">Grav</a>
+                    <a class="" href="https://fbrnc.net/tag:Infrastructure&#32;as&#32;Code">Infrastructure as Code</a>
+                    <a class="" href="https://fbrnc.net/tag:DevOps">DevOps</a>
+                    <a class="" href="https://fbrnc.net/tag:Videos">Videos</a>
+                    <a class="" href="https://fbrnc.net/tag:Lightroom">Lightroom</a>
+                    <a class="" href="https://fbrnc.net/tag:Scaling">Scaling</a>
+                    <a class="" href="https://fbrnc.net/tag:Tricks">Tricks</a>
+                    <a class="" href="https://fbrnc.net/tag:MPMD">MPMD</a>
+                    <a class="" href="https://fbrnc.net/tag:Cache">Cache</a>
+                    <a class="" href="https://fbrnc.net/tag:CMS">CMS</a>
+                    <a class="" href="https://fbrnc.net/tag:Performance">Performance</a>
+                    <a class="" href="https://fbrnc.net/tag:Git">Git</a>
+    </span>
+</div>
+<div class="sidebar-content sidebar-archives">
+    <h4>Archives</h4>
+	<ul class="archives">
+
+
+                    </ul><ul class="archives">
+        <li class="caption">2016</li>
+        <li>
+        <a href="https://fbrnc.net/month:may_2016" title="May 2016">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:mar_2016" title="March 2016">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:jan_2016" title="January 2016">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2015</li>
+        <li>
+        <a href="https://fbrnc.net/month:oct_2015" title="October 2015">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:jun_2015" title="June 2015">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:apr_2015" title="April 2015">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2014</li>
+        <li>
+        <a href="https://fbrnc.net/month:dec_2014" title="December 2014">
+                <span class="label">5</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:nov_2014" title="November 2014">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:may_2014" title="May 2014">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:mar_2014" title="March 2014">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:feb_2014" title="February 2014">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2013</li>
+        <li>
+        <a href="https://fbrnc.net/month:dec_2013" title="December 2013">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:aug_2013" title="August 2013">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:jul_2013" title="July 2013">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:may_2013" title="May 2013">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:apr_2013" title="April 2013">
+                <span class="label">10</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:mar_2013" title="March 2013">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:feb_2013" title="February 2013">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2012</li>
+        <li>
+        <a href="https://fbrnc.net/month:dec_2012" title="December 2012">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:nov_2012" title="November 2012">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:oct_2012" title="October 2012">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:sep_2012" title="September 2012">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:aug_2012" title="August 2012">
+                <span class="label">7</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:jul_2012" title="July 2012">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:jun_2012" title="June 2012">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:may_2012" title="May 2012">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:apr_2012" title="April 2012">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:mar_2012" title="March 2012">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:feb_2012" title="February 2012">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2011</li>
+        <li>
+        <a href="https://fbrnc.net/month:dec_2011" title="December 2011">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:nov_2011" title="November 2011">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:oct_2011" title="October 2011">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:sep_2011" title="September 2011">
+                <span class="label">17</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:aug_2011" title="August 2011">
+                <span class="label">26</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:jul_2011" title="July 2011">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:jun_2011" title="June 2011">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:may_2011" title="May 2011">
+                <span class="label">9</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:apr_2011" title="April 2011">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:mar_2011" title="March 2011">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:feb_2011" title="February 2011">
+                <span class="label">9</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2010</li>
+        <li>
+        <a href="https://fbrnc.net/month:dec_2010" title="December 2010">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:oct_2010" title="October 2010">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:aug_2010" title="August 2010">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:jul_2010" title="July 2010">
+                <span class="label">6</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:jun_2010" title="June 2010">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:apr_2010" title="April 2010">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:mar_2010" title="March 2010">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:feb_2010" title="February 2010">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2009</li>
+        <li>
+        <a href="https://fbrnc.net/month:dec_2009" title="December 2009">
+                <span class="label">7</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:nov_2009" title="November 2009">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:oct_2009" title="October 2009">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:sep_2009" title="September 2009">
+                <span class="label">6</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:aug_2009" title="August 2009">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:jul_2009" title="July 2009">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:jun_2009" title="June 2009">
+                <span class="label">5</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:may_2009" title="May 2009">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:feb_2009" title="February 2009">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:jan_2009" title="January 2009">
+                <span class="label">5</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2008</li>
+        <li>
+        <a href="https://fbrnc.net/month:dec_2008" title="December 2008">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:nov_2008" title="November 2008">
+                <span class="label">11</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:aug_2008" title="August 2008">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:may_2008" title="May 2008">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:apr_2008" title="April 2008">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:mar_2008" title="March 2008">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:feb_2008" title="February 2008">
+                <span class="label">7</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:jan_2008" title="January 2008">
+                <span class="label">10</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2007</li>
+        <li>
+        <a href="https://fbrnc.net/month:dec_2007" title="December 2007">
+                <span class="label">25</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:nov_2007" title="November 2007">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:oct_2007" title="October 2007">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:sep_2007" title="September 2007">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:jun_2007" title="June 2007">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:may_2007" title="May 2007">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:feb_2007" title="February 2007">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:jan_2007" title="January 2007">
+                <span class="label">7</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2006</li>
+        <li>
+        <a href="https://fbrnc.net/month:dec_2006" title="December 2006">
+                <span class="label">5</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:nov_2006" title="November 2006">
+                <span class="label">14</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:oct_2006" title="October 2006">
+                <span class="label">9</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="https://fbrnc.net/month:sep_2006" title="September 2006">
+                <span class="label">7</span>
+                </a>
+    </li>
+</ul>
+</div>
+			</div>
+		</div>
+	
+                                    
+        </section>
+        
+                <footer id="footer">
+            <div class="totop">
+                <span><a href="super-scaling-magento.html#" id="toTop"><i class="fa fa-arrow-up"></i></a></span>
+            </div>
+            <p>Powered by <a href="http://getgrav.org">Grav</a>.</p>
+            <p>
+                <a href="https://fbrnc.net/blog.atom"><i class="fa fa-rss-square"></i> Atom 1.0</a> |
+                <a href="https://fbrnc.net/blog.rss"><i class="fa fa-rss-square"></i> RSS</a> |
+                <a href="https://fbrnc.net/sitemap">Sitemap</a>
+            </p>
+        </footer>
+            </div>
+    <div class="sb-slidebar sb-left sb-width-thin">
+        <div id="panel">
+        
+<ul class="navigation">
+                                    <li class="active">
+                <a href="https://fbrnc.net/">
+                                        Blog
+                </a>
+            </li>
+                                <li class="">
+                <a href="https://fbrnc.net/privacy-policy">
+                                        Privacy Policy
+                </a>
+            </li>
+                                <li class="">
+                <a href="https://fbrnc.net/contact">
+                                        Contact
+                </a>
+            </li>
+                    </ul>
+
+        </div>
+    </div>
+            
+        <script>
+        $(function () {
+            $(document).ready(function() {
+              $.slidebars({
+                hideControlClasses: true,
+                scrollLock: true
+              });
+            });
+        });
+        </script>
+    </body>
+</html>
+<!-- Generated: 2016-07-24T07:38:54+02:00 -->

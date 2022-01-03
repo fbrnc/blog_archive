@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="utf-8" />
+    <title>Keeping it Simple: A Git Workflow | Fabrizio Branca</title>
+    <meta name="generator" content="GravCMS" />
+<meta name="description" content="Web Development" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="icon" type="image/png" href="../../../user/themes/antimatter/images/favicon.png" />
+    <link rel="canonical" href="https://fbrnc.net/blog/2014/12/keeping-it-simple-git-workflow" />
+
+                                                            
+                        <link href="../../../assets/69aec95887701d23e4d88f5cc08d450b.css@g-f5b69dd2.css" type="text/css" rel="stylesheet" />
+
+
+                                                                            <script src="../../../assets/0ce5b591987de495cd9ba62b91568c73.js@g-f5b69dd2" type="text/javascript" ></script>
+
+
+</head>
+<body id="top" class="">
+    <div id="sb-site">
+                <header id="header">
+
+            <div id="logo">
+                <h3><a href="../../../index.html"><span class="firstline">Fabrizio</span><span class="secondline">Branca
+            </div>
+            <div id="navbar">
+                                                
+<ul class="navigation">
+                                    <li class="active">
+                <a href="../../../index.html">
+                                        Blog
+                </a>
+            </li>
+                                <li class="">
+                <a href="../../../privacy-policy.html">
+                                        Privacy Policy
+                </a>
+            </li>
+                                <li class="">
+                <a href="../../../contact.html">
+                                        Contact
+                </a>
+            </li>
+                    </ul>
+
+                                <span class="panel-activation sb-toggle-left navbar-left menu-btn fa fa-bars"></span>
+            </div>
+
+        </header>
+        
+        
+                <section id="body" class="">
+            					
+<div id="breadcrumbs" itemscope itemtype="http://data-vocabulary.org/Breadcrumb">
+                            <a href="../../../index.html" itemprop="url"><span itemprop="title">Blog</span></a>
+            <i class="fa fa-angle-right"></i>
+                                <a href="http://fbrnc.net/blog/2014" itemprop="url"><span itemprop="title">2014</span></a>
+            <i class="fa fa-angle-right"></i>
+                                <a href="http://fbrnc.net/blog/2014/12" itemprop="url"><span itemprop="title">12</span></a>
+            <i class="fa fa-angle-right"></i>
+                                                <span itemprop="title">Keeping it Simple: A Git Workflow</span>
+                        </div>
+				
+		<div class="blog-content-item grid pure-g-r">
+			<div id="item" class="block pure-u-2-3">
+ 			    <div class="list-item">
+
+    <div class="list-blog-header">
+        <span class="list-blog-date">
+            <span>04 Dec</span>
+            <em>2014</em>
+        </span>
+        <h2><a href="keeping-it-simple-git-workflow.html" class="post-title">Keeping it Simple: A Git Workflow</a></h2>
+                <span class="tags">
+                        <a href="../../../tag%253AGit.html">Git</a>
+                        <a href="../../../tag%253AWorkflow.html">Workflow</a>
+                        <a href="../../../tag%253AKISS.html">KISS</a>
+                        <a href="../../../tag%253ADevelopment.html">Development</a>
+                    </span>
+                
+    </div>
+
+    <div class="list-blog-padding">
+            <p><h3>Keeping it Simple</h3>
+<p>In the past months my team and I have spent some time reflecting our development processes in general and our Git workflow in particular. </p>
+<p>One of my favorite things to do these days is questioning why something has to be that complex. <a href="http://www.slideshare.net/aoepeople/rock-solid-magento/11">Over time every single aspect of our work has become increasingly complex</a> and many people come up with <a href="http://www.slideshare.net/aoepeople/rock-solid-magento/13">solutions to these problems</a>. But looking at these fancy solutions often doesn't make things easier since now you have to understand why something was solved that way, what benefits it brings over doing it in a different way and if the assumption under which this solution was designed even applies to our situation.</p>
+<p>I feel it's very refreshing to forget about everything that's out there for a moment and start from scratch <a href="http://www.slideshare.net/aoepeople/rock-solid-magento/9">looking at the big picture first</a>, reflecting the actual problem and what's the simplest solution to it. Then think about what the limitation are to this solution and if there are ways to work around these in an elegant way or if we might want to come up with a different solution for the edge cases.</p>
+<p>Don't confuse this approach with quickly hacking something that "works for now". In fact a lot of thought usually goes into creating a very minimal solution. After questioning and rethinking how to set up our development environments with Chef and Vagrant, how to design our build process with Jenkins and how to deploy code to production, the next thing was to come up with a Git workflow that's simple enough to bring back the fun into committing code :)</p>
+
+<h3>Existing solutions</h3>
+<p>There are many workflows out there that are trying to bring some structure into the process of collaboratively working on the same project. The most known is definitely the branching model described in <a href="http://nvie.com/posts/a-successful-git-branching-model/">this post by Vincent Driessen</a>.</p>
+<p>There's another <a href="http://blog.endpoint.com/2014/05/git-workflows-that-work.html">highly interesting blog post</a> that mentions a couple of different approaches and then there's <a href="https://www.atlassian.com/git/tutorials/comparing-workflows">this post on the Atlassian website</a> that nicely explains and visualizes four different workflow types.</p>
+<h3>Git</h3>
+<p>Git is a very powerful tool with some highly interesting concepts. These days it's kind of uncool to NOT use Git, although I'm sure most developers only use a small subset (and I won't blame you, because this is actually what this post is all about).
+At the same time all the features Git offers seems to inspire people to come up with the possibly most difficult solution to any problem, just because they can. Being a smart developer is all about coming up with solutions that only a very small group of equally smart developers can follow, right? Well, maybe not...</p>
+<p>Don't get me wrong: I like Git. I like distributed version control. I like how snappy and fast it is and after working with CVS and SVN I'll never want to go back.</p>
+<p>But: Dealing with version control was never a big deal. Before we started using Git a couple of years ago. We used to develop something, commit it and we were done. Occasionally we had do deal with conflicts and that was highly annoying, but you didn't need many weeks to fully grasp a development workflow and you didn't need to constantly look things up on a cheatsheet. Also there weren't too many things you could screw up. (OK, the commit history didn't look as pretty, but so what? At least we didn't spend days rewriting histories just to make them look pretty).</p>
+<p>I know at some point while reading this blog post you'll want to yell at me: <strong><em>"You just didn't understand what Git is all about, stupid!"</em></strong>, preparing yourself to have to teach me much how simple rebasing, squashing, cherry-picking, stashing and subtree-merging was and about all the great scenarios you could handle with these tools.</p>
+<p>I'll still like Git, and I might still like you, but: At this point I might not care too much about what's possible with Git. There are a lot more exciting things to play with than version control. </p>
+<p>But, let's forget about all of this for a minute and reflect what's important to us:</p>
+<h3>Our requirements</h3>
+<p>Our development teams mostly do project work and there's a couple of modules out there (Magento, TYPO3 and some more stuff...) that we're maintaining. </p>
+<p>I think to most important think now is to understand that it highly depends on <strong>what</strong> the team is developing in order to come up with a Git workflow. That's the point that I'm missing in all resources mentioned above. We're not selling any products. We're (mostly) not creating frameworks. We're not maintaining any public APIs. </p>
+<p>Let's forget about our modules, tools and extensions and focus on our project work. The majority of all our commits go into projects and project specific (private) repositories.</p>
+<p>So we're mostly talking about projects with a classic application lifecycle: develop, build, test, deploy. </p>
+<p>Now, the point is:</p>
+<ul>
+<li>We will <strong>not</strong> have multiple versions of that project "out there" at the same time (we're not talking about modules here...). </li>
+<li>All development work always goes into the <strong>latest version</strong>. We never go back and continue developing on an older snapshot.</li>
+<li>We <strong>don't backport</strong> features into older versions</li>
+<li>We do have a <strong>build process</strong> in place that will create a snapshot of the project in time. </li>
+</ul>
+<p>But of course there's more requirements</p>
+<ul>
+<li>We don't want <strong>unfinished features</strong> to block other code from going out to production.</li>
+<li><strong>Critical bugs</strong> might happen and we need a quick way of fixing them and rolling them out after testing. </li>
+</ul>
+<h3>Don't focus on the rare edge-cases</h3>
+<p>I don't think it makes any sense to come up with a workflow that will cover every single edge case and in turn will make your regular work a lot more difficult. Let's just focus on what we do most of the time and find "good enough" solutions for the edge cases.</p>
+<h3>Workflow</h3>
+<p>As a result of these requirements we came up with following workflow:</p>
+<h4>Single mainline</h4>
+<p>Instead of having a master branch, a develop branch, hotfix, release and feature branches, I'd like to keep this to a minimum. And the minimum is </p>
+<ul>
+<li>a single mainline branch ("master")</li>
+<li>one short-lived feature branch per feature with a speaking branch name.</li>
+</ul>
+<p>The mainline branch is what we feed into our continuous integration pipeline. We'll create a snapshot, package it into a build package, run a series of tests and if everything passes this snapshot turns into a release candidate. The product owner / project manager decides if and when it goes out to production.</p>
+<h4>Feature branches</h4>
+<p>We still want to isolate any feature development from the mainline, so that we can focus on the feature were currently working on without constantly having to worry about what else would be happening on the same branch. You'll be faced with potential conflicts only once: When merging your branch back into the mainline.</p>
+<p>A feature should only be merged into the mainline branch if it's "<a href="https://www.youtube.com/watch?v=Jlb195JT7hM">done done</a>". Our expectation is that it will still work after it meets the other new features on the integration environment. If the series of tests proofs us wrong we'll go back and fix the bug and/or revert the merge. There's no need to be pessimistic about this in the first place and to come up with a solution that will test every feature branch individually.</p>
+<p>The merging should happen with the <code>--no-ff</code> option so that we'll be able to tell that this had been a feature branch even if nothing else might have been committed to the main branch since the feature branch was created. </p>
+<h4>No commits to the mainline, only merges!</h4>
+<p>We also established to rule that there can't be any real commits on the mainline. Every single line of code needs to come in as a merge from a feature branch. This also forces us to make every code modification/addition under the context of a user story or bugfix ticket since this is part of the naming convention we use to name the feature branches.</p>
+<p>I'm particular bad at following this rule and might not end up creating a feature branch for a simple single-commit task. While I see it's important to be consistent, in many cases I'm also too lazy and reluctant to do this just to follow a process without seeing any real benefit. This is driving <a href="https://twitter.com/leesaferite">some people</a> on my team crazy. :)</p>
+<h4>Hotfixes</h4>
+<p>How do we deal with hotfixes? While this is hopefully a rare exception, it's still important enough to consider in our workflow.</p>
+<p>The problem here is that we need to create a new build that's equal to the one that's currently on production with the only change that it has the bugfix included. We do not want any other feature that might have been merged in the meantime to accidentally end up on production as a side effect of deploying a hotfix release.</p>
+<p>Basically there are two different scenarios here:</p>
+<ol>
+<li><strong>Nothing else</strong> has been merged (or committed) into the mainline branch since the build has been created that's now on production and contains the bug. </li>
+<li><strong>Something else</strong> has been merged (or committed) into the mainline branch since that build was created.</li>
+</ol>
+<p>It's very unlikely that bugs will be found days after that build was deployed. In most cases you'll know within the first hour or two. And the chances that another feature branch was merged into the mainline are low. In this case we can treat our <strong>bugfix exactly like a feature branch</strong>. We branch off master, fix the bug, and merge it back after testing it. A new build package will be created, unit tests, selenium tests,... and the build can be deployed to production.</p>
+<p>In case another feature branch <strong>was merged</strong> since then we need to get a little more fancy. (Please note, that so far this is the only special case we need to cover in our simplistic workflow.)
+So now we need to find the commit that was used to create the current build. That shouldn't be too hard since your CI server will probably keep track of this or you might automatically tag your Git repo on successful builds.
+Now is the time when we'll create a hotfix branch from an earlier point in time (back when nothing else was merged into the mainline). We fix the bug in this hotfix branch and now the trick is to create a build from this hotfix branch instead.
+Implementing this with Jenkins is very easy. Instead of hardcoding the branch to "master" you can make the branch an input parameter (that defaults to "master"). The build that get's created now follows the exact pipeline and is ready to be deployed to production after all the tests have passed. The original - and modified - mainline is not included in this build. Now, after deploying this build to production you'll merge the hotfix branch back into the master branch and continue from there.</p>
+<p><a href="http://www.slideshare.net/aoepeople/rock-solid-magento/45"><img alt="Git Workflow" src="../../../images/c/1/c/2/c/c1c2cf0ca222fc53862976e4dc21bee8dc319153-git.jpeg" /></a></p>
+<h3>Conclusion</h3>
+<p>So this is our very simple workflow. After trying several other workflows I'm very happy with how this is working out now. Also, our approach seems to be pretty close to what the <a href="http://scottchacon.com/2011/08/31/github-flow.html">GitHub team is doing</a>.
+I'm enjoying the fact that we don't have any overhead and that our development process went back to being easy to understand and to follow. I still haven't experienced any limitations of getting rid of the extra develop, features and hotfix branches. I love that it's very clear where any new (feature/hotfix) branches originate from and where the go to. I love that there's no "release manager" role that needs to take care of merging a branch into another one or preparing any release branches. And I love that I can worry less about version control now and spend time to do the what I like most: writing code. </p></p>
+
+        <div class="share">
+            <span>Share via: </span>
+            <ul>
+                <li><a target="_blank" href="https://twitter.com/home?status=Keeping%20it%20Simple%3A%20A%20Git%20Workflow%20https%3A%2F%2Ffbrnc.net%2Fblog%2F2014%2F12%2Fkeeping-it-simple-git-workflow%20%2Fvia%20%40fbrnc">Twitter</a></li>
+                <li><a target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Ffbrnc.net%2Fblog%2F2014%2F12%2Fkeeping-it-simple-git-workflow">Facebook</a></li>
+                <li><a target="_blank" href="https://plus.google.com/share?url=https%3A%2F%2Ffbrnc.net%2Fblog%2F2014%2F12%2Fkeeping-it-simple-git-workflow">Google+</a></li>
+                <li><a target="_blank" href="mailto:?subject=Reading Recommendation&amp;body=Check out this article: Keeping it Simple: A Git Workflow https%3A%2F%2Ffbrnc.net%2Fblog%2F2014%2F12%2Fkeeping-it-simple-git-workflow by Fabrizio Branca .">Mail</a></li>
+            </ul>
+        </div>
+
+        <h4>Comments</h4>
+        <div class="enable_comments_notice">
+            <p>This website uses <a href="https://disqus.com">disqus</a> for the commenting functionality. In order to protect your privacy comments are <em>disabled by default</em>.</p>
+            <a id="enable_comments" href="keeping-it-simple-git-workflow.html#">Enable Comments</a>
+        </div>
+        <div id="disqus_thread"></div>
+        <script type="text/javascript">
+            var disqus_shortname = 'fbrnc';
+                    </script>
+
+    
+    </div>
+
+</div>
+			</div>
+			<div id="sidebar" class="block size-1-3 pure-u-1-3">
+				<div class="sidebar-content profile">
+    <div class="profile-image">
+        <img src="../../../user/themes/antimatter/images/fabrizio_polaroid.png" alt="Fabrizio Branca"/>
+    </div>
+    <div class="profile-content">
+        <p><strong>Hi, I'm Fabrizio!</strong></p>
+        <p>I'm a web developer from San Francisco, CA and I work for <a href="http://www.aoe.com">AOE</a>.</p>
+        <p>Follow me on <a href="https://twitter.com/fbrnc">Twitter</a> or check out my stuff on <a href="https://github.com/fbrnc">GitHub</a>.</p>
+            </div>
+</div>
+<div class="sidebar-content sidebar-certifications">
+    <h4>Certifications</h4>
+    <ul>
+        <li>
+            <img src="../../../user/themes/antimatter/images/cert/Solutions-Architect-Associate.png" alt="AWS Certified Solutions Architect - Associate"/>
+        </li>
+        <li>
+            <img src="../../../user/themes/antimatter/images/cert/Developer-Associate.png" alt="AWS Certified Developer - Associate"/>
+        </li>
+        <li>
+            <img src="../../../user/themes/antimatter/images/cert/SysOps-Administrator-Associate.png" alt="AWS Certified SysOps Administrator - Associate"/>
+        </li>
+        <li>
+            <a href="https://magento.com/blog/magento-news/meet-2016-magento-masters-mentors">
+                <img src="../../../user/themes/antimatter/images/cert/magento_master_2016.png" alt="Magento Masters 2016"/>
+            </a>
+        </li>
+        <li>
+            <a href="http://www.magentocommerce.com/certification/directory/dev/65753/">
+                <img src="../../../user/themes/antimatter/images/cert/magento_certified_developer_plus.png" alt="Magento Certified Developer Plus"/>
+            </a>
+        </li>
+        <li>
+            <a href="http://www.magentocommerce.com/certification/directory/dev/65753/">
+                <img src="../../../user/themes/antimatter/images/cert/frontend_developer.png" alt="Magento Certified Frontend Developer"/>
+            </a>
+        </li>
+        <li>
+            <a href="http://typo3.org/certification/about-the-certification/certified-typo3-cms-integrator-listing/show/branca-fabrizio/">
+                <img src="../../../user/themes/antimatter/images/cert/TYPO3-Certified-Integrator-black-140.png" alt="TYPO3 Certified Integrator"/>
+            </a>
+        </li>
+        <li>
+            <a href="http://www.zend.com/en/services/certification/zend-certified-engineer-directory#ClientCandidateID=ZEND009995&cid=0">
+                <img src="../../../user/themes/antimatter/images/cert/php5_zce_logo_new.gif" alt="Zend Certified Engineer"/>
+            </a>
+        </li>
+    </ul>
+</div>
+<div class="sidebar-content sidebar-tags">
+    <h4>Popular Tags</h4>
+    
+<span class="tags">
+                    <a class="" href="../../../tag%253AGallery.html">Gallery</a>
+                    <a class="" href="../../../tag%253AMagento.html">Magento</a>
+                    <a class="" href="../../../tag%253ADevelopment.html">Development</a>
+                    <a class="" href="../../../tag%253ATYPO3.html">TYPO3</a>
+                    <a class="" href="../../../tag%253APhotography.html">Photography</a>
+                    <a class="" href="../../../tag%253ASonstiges.html">Sonstiges</a>
+                    <a class="" href="../../../tag%253A30&#32;day&#32;photo&#32;challenge.html">30 day photo challenge</a>
+                    <a class="" href="../../../tag%253APfadfinder.html">Pfadfinder</a>
+                    <a class="" href="../../../tag%253ACaching.html">Caching</a>
+                    <a class="" href="../../../tag%253AAWS.html">AWS</a>
+                    <a class="" href="http://fbrnc.net/tag:Flash/Actionscript">Flash/Actionscript</a>
+                    <a class="" href="../../../tag%253APortfolio.html">Portfolio</a>
+                    <a class="" href="../../../tag%253ACloudFormation.html">CloudFormation</a>
+                    <a class="" href="../../../tag%253AVarnish.html">Varnish</a>
+                    <a class="" href="../../../tag%253ALambda.html">Lambda</a>
+                    <a class="" href="../../../tag%253AHome.html">Home</a>
+                    <a class="" href="../../../tag%253ABücher.html">Bücher</a>
+                    <a class="" href="../../../tag%253APresentation.html">Presentation</a>
+                    <a class="" href="../../../tag%253ADesign.html">Design</a>
+                    <a class="" href="../../../tag%253AOpen&#32;Source.html">Open Source</a>
+                    <a class="" href="../../../tag%253AStudium.html">Studium</a>
+                    <a class="" href="../../../tag%253ADeployment.html">Deployment</a>
+                    <a class="" href="../../../tag%253AOpsWorks.html">OpsWorks</a>
+                    <a class="" href="../../../tag%253AMeetup.html">Meetup</a>
+                    <a class="" href="../../../tag%253AKISS.html">KISS</a>
+                    <a class="" href="../../../tag%253ASNS.html">SNS</a>
+                    <a class="" href="../../../tag%253AMicroservices.html">Microservices</a>
+                    <a class="" href="../../../tag%253AArchitecture.html">Architecture</a>
+                    <a class="" href="../../../tag%253AKinesis.html">Kinesis</a>
+                    <a class="" href="../../../tag%253ASQS.html">SQS</a>
+                    <a class="" href="../../../tag%253AWorkflow.html">Workflow</a>
+                    <a class="" href="../../../tag%253AJMeter.html">JMeter</a>
+                    <a class="" href="../../../tag%253AGrav.html">Grav</a>
+                    <a class="" href="../../../tag%253AInfrastructure&#32;as&#32;Code.html">Infrastructure as Code</a>
+                    <a class="" href="../../../tag%253ADevOps.html">DevOps</a>
+                    <a class="" href="../../../tag%253AVideos.html">Videos</a>
+                    <a class="" href="../../../tag%253ALightroom.html">Lightroom</a>
+                    <a class="" href="../../../tag%253AScaling.html">Scaling</a>
+                    <a class="" href="../../../tag%253ATricks.html">Tricks</a>
+                    <a class="" href="../../../tag%253AMPMD.html">MPMD</a>
+                    <a class="" href="../../../tag%253ACache.html">Cache</a>
+                    <a class="" href="../../../tag%253ACMS.html">CMS</a>
+                    <a class="" href="../../../tag%253APerformance.html">Performance</a>
+                    <a class="" href="../../../tag%253AGit.html">Git</a>
+    </span>
+</div>
+<div class="sidebar-content sidebar-archives">
+    <h4>Archives</h4>
+	<ul class="archives">
+
+
+                    </ul><ul class="archives">
+        <li class="caption">2016</li>
+        <li>
+        <a href="../../../month%253Amay_2016.html" title="May 2016">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2016.html" title="March 2016">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajan_2016.html" title="January 2016">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2015</li>
+        <li>
+        <a href="../../../month%253Aoct_2015.html" title="October 2015">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2015.html" title="June 2015">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2015.html" title="April 2015">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2014</li>
+        <li>
+        <a href="../../../month%253Adec_2014.html" title="December 2014">
+                <span class="label">5</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2014.html" title="November 2014">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2014.html" title="May 2014">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2014.html" title="March 2014">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2014.html" title="February 2014">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2013</li>
+        <li>
+        <a href="../../../month%253Adec_2013.html" title="December 2013">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2013.html" title="August 2013">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2013.html" title="July 2013">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2013.html" title="May 2013">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2013.html" title="April 2013">
+                <span class="label">10</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2013.html" title="March 2013">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2013.html" title="February 2013">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2012</li>
+        <li>
+        <a href="../../../month%253Adec_2012.html" title="December 2012">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2012.html" title="November 2012">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2012.html" title="October 2012">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2012.html" title="September 2012">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2012.html" title="August 2012">
+                <span class="label">7</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2012.html" title="July 2012">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2012.html" title="June 2012">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2012.html" title="May 2012">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2012.html" title="April 2012">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2012.html" title="March 2012">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2012.html" title="February 2012">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2011</li>
+        <li>
+        <a href="../../../month%253Adec_2011.html" title="December 2011">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2011.html" title="November 2011">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2011.html" title="October 2011">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2011.html" title="September 2011">
+                <span class="label">17</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2011.html" title="August 2011">
+                <span class="label">26</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2011.html" title="July 2011">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2011.html" title="June 2011">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2011.html" title="May 2011">
+                <span class="label">9</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2011.html" title="April 2011">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2011.html" title="March 2011">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2011.html" title="February 2011">
+                <span class="label">9</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2010</li>
+        <li>
+        <a href="../../../month%253Adec_2010.html" title="December 2010">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2010.html" title="October 2010">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2010.html" title="August 2010">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2010.html" title="July 2010">
+                <span class="label">6</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2010.html" title="June 2010">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2010.html" title="April 2010">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2010.html" title="March 2010">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2010.html" title="February 2010">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2009</li>
+        <li>
+        <a href="../../../month%253Adec_2009.html" title="December 2009">
+                <span class="label">7</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2009.html" title="November 2009">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2009.html" title="October 2009">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2009.html" title="September 2009">
+                <span class="label">6</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2009.html" title="August 2009">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2009.html" title="July 2009">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2009.html" title="June 2009">
+                <span class="label">5</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2009.html" title="May 2009">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2009.html" title="February 2009">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajan_2009.html" title="January 2009">
+                <span class="label">5</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2008</li>
+        <li>
+        <a href="../../../month%253Adec_2008.html" title="December 2008">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2008.html" title="November 2008">
+                <span class="label">11</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2008.html" title="August 2008">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2008.html" title="May 2008">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2008.html" title="April 2008">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2008.html" title="March 2008">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2008.html" title="February 2008">
+                <span class="label">7</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajan_2008.html" title="January 2008">
+                <span class="label">10</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2007</li>
+        <li>
+        <a href="../../../month%253Adec_2007.html" title="December 2007">
+                <span class="label">25</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2007.html" title="November 2007">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2007.html" title="October 2007">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2007.html" title="September 2007">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2007.html" title="June 2007">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2007.html" title="May 2007">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2007.html" title="February 2007">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajan_2007.html" title="January 2007">
+                <span class="label">7</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2006</li>
+        <li>
+        <a href="../../../month%253Adec_2006.html" title="December 2006">
+                <span class="label">5</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2006.html" title="November 2006">
+                <span class="label">14</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2006.html" title="October 2006">
+                <span class="label">9</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2006.html" title="September 2006">
+                <span class="label">7</span>
+                </a>
+    </li>
+</ul>
+</div>
+			</div>
+		</div>
+	
+                                    
+        </section>
+        
+                <footer id="footer">
+            <div class="totop">
+                <span><a href="keeping-it-simple-git-workflow.html#" id="toTop"><i class="fa fa-arrow-up"></i></a></span>
+            </div>
+            <p>Powered by <a href="http://getgrav.org">Grav</a>.</p>
+            <p>
+                <a href="../../../blog.atom.html"><i class="fa fa-rss-square"></i> Atom 1.0</a> |
+                <a href="../../../blog.rss.html"><i class="fa fa-rss-square"></i> RSS</a> |
+                <a href="http://fbrnc.net/sitemap">Sitemap</a>
+            </p>
+        </footer>
+            </div>
+    <div class="sb-slidebar sb-left sb-width-thin">
+        <div id="panel">
+        
+<ul class="navigation">
+                                    <li class="active">
+                <a href="../../../index.html">
+                                        Blog
+                </a>
+            </li>
+                                <li class="">
+                <a href="../../../privacy-policy.html">
+                                        Privacy Policy
+                </a>
+            </li>
+                                <li class="">
+                <a href="../../../contact.html">
+                                        Contact
+                </a>
+            </li>
+                    </ul>
+
+        </div>
+    </div>
+            
+        <script>
+        $(function () {
+            $(document).ready(function() {
+              $.slidebars({
+                hideControlClasses: true,
+                scrollLock: true
+              });
+            });
+        });
+        </script>
+    </body>
+</html>
+<!-- Generated: 2016-07-24T08:58:18+02:00 -->

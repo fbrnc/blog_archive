@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="utf-8" />
+    <title>Magento / Zend Framework&#039;s TwoLevels Cache Backend Mess | Fabrizio Branca</title>
+    <meta name="generator" content="GravCMS" />
+<meta name="description" content="Web Development" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="icon" type="image/png" href="http://fbrnc.net/user/themes/antimatter/images/favicon.png" />
+    <link rel="canonical" href="magento-zend-frameworks-twolevels-cache-backend-mess.html" />
+
+                                                            
+                        <link href="../../../assets/69aec95887701d23e4d88f5cc08d450b.css@g-db0a965f.css" type="text/css" rel="stylesheet" />
+
+
+                                                                            <script src="../../../assets/0ce5b591987de495cd9ba62b91568c73.js@g-db0a965f" type="text/javascript" ></script>
+
+
+</head>
+<body id="top" class="">
+    <div id="sb-site">
+                <header id="header">
+
+            <div id="logo">
+                <h3><a href="../../../index.html"><span class="firstline">Fabrizio</span><span class="secondline">Branca
+            </div>
+            <div id="navbar">
+                                                
+<ul class="navigation">
+                                    <li class="active">
+                <a href="../../../index.html">
+                                        Blog
+                </a>
+            </li>
+                                <li class="">
+                <a href="../../../privacy-policy.html">
+                                        Privacy Policy
+                </a>
+            </li>
+                                <li class="">
+                <a href="../../../contact.html">
+                                        Contact
+                </a>
+            </li>
+                    </ul>
+
+                                <span class="panel-activation sb-toggle-left navbar-left menu-btn fa fa-bars"></span>
+            </div>
+
+        </header>
+        
+        
+                <section id="body" class="">
+            					
+<div id="breadcrumbs" itemscope itemtype="http://data-vocabulary.org/Breadcrumb">
+                            <a href="../../../index.html" itemprop="url"><span itemprop="title">Blog</span></a>
+            <i class="fa fa-angle-right"></i>
+                                <a href="http://fbrnc.net/blog/2011" itemprop="url"><span itemprop="title">2011</span></a>
+            <i class="fa fa-angle-right"></i>
+                                <a href="http://fbrnc.net/blog/2011/10" itemprop="url"><span itemprop="title">10</span></a>
+            <i class="fa fa-angle-right"></i>
+                                                <span itemprop="title">Magento / Zend Framework's TwoLevels Cache Backend Mess</span>
+                        </div>
+				
+		<div class="blog-content-item grid pure-g-r">
+			<div id="item" class="block pure-u-2-3">
+ 			    <div class="list-item">
+
+    <div class="list-blog-header">
+        <span class="list-blog-date">
+            <span>19 Oct</span>
+            <em>2011</em>
+        </span>
+        <h2><a href="magento-zend-frameworks-twolevels-cache-backend-mess.html" class="post-title">Magento / Zend Framework's TwoLevels Cache Backend Mess</a></h2>
+                <span class="tags">
+                        <a href="../../../tag%253AMagento.html">Magento</a>
+                        <a href="../../../tag%253ADevelopment.html">Development</a>
+                        <a href="../../../tag%253ACaching.html">Caching</a>
+                    </span>
+                
+    </div>
+
+    <div class="list-blog-padding">
+            <p><h3>Table of content</h3>
+<ul>
+<li><a href="http://fbrnc.net/posts/2011/10/magento-zend-frameworks-twolevels-cache-backend-mess.html#tt_content_1444">Basics</a></li>
+<li><a href="http://fbrnc.net/posts/2011/10/magento-zend-frameworks-twolevels-cache-backend-mess.html#tt_content_1445">Two-Level Caching</a></li>
+<li><a href="http://fbrnc.net/posts/2011/10/magento-zend-frameworks-twolevels-cache-backend-mess.html#tt_content_1448">Problem: Priorities</a></li>
+<li><a href="http://fbrnc.net/posts/2011/10/magento-zend-frameworks-twolevels-cache-backend-mess.html#tt_content_1454">Problem: First-level cache is not refreshed correctly</a></li>
+<li><a href="http://fbrnc.net/posts/2011/10/magento-zend-frameworks-twolevels-cache-backend-mess.html#tt_content_1459">Problem: Hardcoded first-level cache classes</a></li>
+<li><a href="http://fbrnc.net/posts/2011/10/magento-zend-frameworks-twolevels-cache-backend-mess.html#tt_content_1460">Related posts</a></li>
+<li><a href="http://fbrnc.net/posts/2011/10/magento-zend-frameworks-twolevels-cache-backend-mess.html#tt_content_1461">Further reading</a></li>
+</ul>
+<h3>Basics</h3>
+<p>You might want to read <a href="../../../magento-caching-internals.html">my blog post about caching internals</a> to understand how the different classes are related to each other and what function they have. In addition the ZF's classes, Magento comes with some extra classes (_Varien_Cache<em>Core</em>, _Mage_Core_Model<em>Cache</em> and two cache backend implementations for <a href="../../../magentos-database-cache-backend-mess.html">database caching</a> and <a href="http://eaccelerator.net/">eaccelerator</a>). The TwoLevels cache backend is part of ZF.</p>
+<h3>Two-Level Caching</h3>
+<p>Two-level caching is widely used in computing. Basically it is about having a small, but fast cache that is used for the first lookup, and if the data cannot be found in the first level it will be looked up in another cache that's usually bigger (mostly unlimited in size), but slower. This gives you both advantages: speed and size. Cache implementations usually have different features like tagging, but going into details would be out of scope for this blog post. </p>
+<p>This is how two level caching is supposed to work:</p>
+<p><img src="../../../user/pages/01.blog/2011/10/magento-zend-frameworks-twolevels-cache-backend-mess/Two-Level_Cache.png" /></p>
+<p>But in ZF's caching implementation there are some things that go wrong making your caches inefficient:</p>
+<h3>Problem: Priorities</h3>
+<p>In a two-level cache setup there are some valid reasons why you would like data in the first level to have a shorter lifetime. Maybe because the first-level-cache is much smaller and you don't want to block valuable space with old or rarely used data. Zend Framework has a problem with this:</p>
+<p>The TwoLevels cache backend (_Zend_Cache_Backend<em>TwoLevels</em>) implements the interface _Zend_Cache_Backend<em>ExtendedInterface</em>. That's a good thing because it allows to use advanced features like priorities. If features are available for a specific backend will be checked using the method "<em>getCapabilities()</em>". Too bad that the TwoLevels cache backend uses the settings from the slow backend for its own settings:</p>
+<pre><code>public function getCapabilities()
+{
+    $slowBackendCapabilities = $this-&gt;_slowBackend-&gt;getCapabilities();
+    return array(
+        'automatic_cleaning' =&gt; $slowBackendCapabilities['automatic_cleaning'],
+        'tags' =&gt; $slowBackendCapabilities['tags'],
+        'expired_read' =&gt; $slowBackendCapabilities['expired_read'],
+        'priority' =&gt; $slowBackendCapabilities['priority'],
+        'infinite_lifetime' =&gt; $slowBackendCapabilities['infinite_lifetime'],
+        'get_list' =&gt; $slowBackendCapabilities['get_list']
+    );
+}</code></pre>
+<p>That means if you're using a slow backend that does not support priorities your TwoLevels cache won't neither support this feature. Strange, as priorities are mainly designed for controlling data in a two-level cache setup. ZF's file backend does not support priorities. </p>
+<p>Too bad that Zend_Cache_Core's method <em>save()</em> checks for that capability it won't pass the priority parameter if this feature is not defined. Passing the additional parameter wouldn't hurt in any case and would solve some problems.</p>
+<pre><code>public function save($data, $id = null, $tags = array(), $specificLifetime = false, $priority = 8)
+{
+    // ...
+
+    if (($this-&gt;_extendedBackend) &amp;&amp; ($this-&gt;_backendCapabilities['priority'])) {
+        $result = $this-&gt;_backend-&gt;save($data, $id, $tags, $specificLifetime, $priority);
+    } else {
+        $result = $this-&gt;_backend-&gt;save($data, $id, $tags, $specificLifetime);
+    }
+
+    // ...
+
+}</code></pre>
+<p>Even worse, that the TwoLevels cache implementation actually uses this paramter to calculate the lifetime for the first level cache, even if the capability is not defined. The parameter is preset with "8" which leads to data in the first level cache always having a lifetime that's one third of the original one without having to possibility to influence this. Check "_Zend_Cache_Backend_TwoLevels-&gt;<em>getFastLifetime()</em>" for details on the calculations:</p>
+<pre><code>private function _getFastLifetime($lifetime, $priority, $maxLifetime = null)
+{
+    if ($lifetime === null) {
+        // if lifetime is null, we have an infinite lifetime
+        // we need to use arbitrary lifetimes
+        $fastLifetime = (int) (2592000 / (11 - $priority));
+    } else {
+        $fastLifetime = (int) ($lifetime / (11 - $priority));
+    }
+    if (($maxLifetime !== null) &amp;&amp; ($maxLifetime &gt;= 0)) {
+        if ($fastLifetime &gt; $maxLifetime) {
+            return $maxLifetime;
+        }
+    }
+    return $fastLifetime;
+}</code></pre>
+<p>See section "<a href="http://fbrnc.net/posts/2011/10/magento-zend-frameworks-twolevels-cache-backend-mess.html#c1454">Problem: First level cached is not refreshed correctly</a>"  why this actually is a big problem. </p>
+<p>I've created a patch </p>
+<ol>
+<li>that enables the priority setting of the TwoLevels cache regardless of the used backends (because priority usage has nothing to do capabilities of the backends in this case)</li>
+<li>that makes the default priority configurable in Magento. If you don't want to have shorter lifetimes you need to set this parameter to 10. Decreasing this value will shorten the first level cache lifetime. Unless you really know what you want and unless you have the auto_refreshing (see <a href="http://fbrnc.net/posts/2011/10/magento-zend-frameworks-twolevels-cache-backend-mess.html#c1454">below</a>) fixed you probably want this set to 10 in your Magento instance. For backwards compability reason it defaults to "8" in my patch.</li>
+</ol>
+<p><strong><a href="https://gist.github.com/1262502">Find my patch here.</a></strong></p>
+<p>Configuration can be done in the cache section of your local.xml file:</p>
+<pre><code>&lt;config&gt;
+    &lt;global&gt;
+        &lt;cache&gt;
+            &lt;backend&gt;apc&lt;/backend&gt;
+            &lt;slow_backend&gt;File&lt;/slow_backend&gt;
+            &lt;auto_refresh_fast_cache&gt;1&lt;/auto_refresh_fast_cache&gt;
+            &lt;prefix&gt;MYSHOP_&lt;/prefix&gt;
+            &lt;default_priority&gt;10&lt;/default_priority&gt;
+        &lt;/cache&gt;
+    &lt;/global&gt;
+&lt;/config&gt;</code></pre>
+<h3>Problem: First-level cache is not refreshed correctly</h3>
+<p>Zend Framework's TwoLevels cache has a problem with refreshing data in the first level cache. If you always have the same lifetimes for the first level and the second level this is no problem for you, but if you haven't already fixed the bug in the <a href="http://fbrnc.net/posts/2011/10/magento-zend-frameworks-twolevels-cache-backend-mess.html#c1448">section above</a> the first level lifetime is always one third and won't be refreshed until the data expires in the slow backend. Check the statistics in my <a href="../../../magento-two-level-caching.html">previous blog post on this topic</a> and this statistics for some demonstration of the bug resulting in bad cache efficiency:</p>
+<p><img src="../../../user/pages/01.blog/2011/10/magento-zend-frameworks-twolevels-cache-backend-mess/bug.jpg" />
+First level cache misses after 1/3rd of time  </p>
+<p><img src="../../../user/pages/01.blog/2011/10/magento-zend-frameworks-twolevels-cache-backend-mess/fixed.jpg" />
+First level cache hits with priority = 10</p>
+<p>There's a simple way around this bug: <strong>Enabling auto refreshing</strong>. But auto refreshing is buggy aswell. Auto refreshing will rewrite data in the first level cache on every read. Writing usually is much slower and in most cases totally useless. So there is no reason to enable this feature unless your shop is too fast and you want to slow it down intentionally. Besides that it won't be possible the gather hit statistics because all data will be reinserted after each hit resulting the hit count to always be "1".  You can see that in apc-info. Hit statistics data might be used be some cache implementation to decide which entries to dismiss on full caches. </p>
+<p>The reason this feature probably was created for is to write data back into the first level cache if it was not found there, but found in the second level cache. (That's how two-level caching is supposed to work. <a href="http://fbrnc.net/posts/2011/10/magento-zend-frameworks-twolevels-cache-backend-mess.html#c1446">See diagram above</a>.). But current auto refresh implementation does not work this way. <a href="http://framework.zend.com/issues/browse/ZF-8431">This was already reported (including a simple patch)</a>, but sadly wasn't included to ZF and Magento yet. Applying this patch works fine and will allow you to have firs-level caches with shorter lifetimes that will refresh their data from second level after being expired on next hit. Calculating new lifetimes in this patch is not taken into account. That means if the first level is refreshed shortly before the second level expires data may stay in first level a little longer as expected. But this shouldn't be a big deal and still way better than not using the fast cache at all after its lifetime has expired.</p>
+<p>Also check following reported bugs that affect the TwoLevel cache (some of them have been applied to the TwoLevels cache in the meantime, others aren't):</p>
+<ul>
+<li><a href="http://framework.zend.com/issues/browse/ZF-7972">Zend_Cache_Backend_TwoLevels auto_refresh_fast_cache off and priority lower than 10 causes inconsistencies</a></li>
+<li><a href="http://framework.zend.com/issues/browse/ZF-8431">Cache_Backend_TwoLevels: auto_refresh_fast_cache always saves fast backend</a></li>
+<li><a href="http://framework.zend.com/issues/browse/ZF-9705">TwoLevels backend doesn't update fast cache if full</a></li>
+<li>And if you're using APC as first level cache take into account that default behaviour is that it will be completly flushed everytime it fills up completely: <a href="../../../wenn-der-apc-cache-volllaeuft.html">Check this blog post on details</a> (in german).</li>
+</ul>
+<h3>Problem: Hardcoded first-level cache classes</h3>
+<p>This is actually a Magento Bug and not a ZF bug: You can't use every cache backend as first level cache in a  two-level setup. The classes that are available are hardcoded in _Mage_Core_Model_Cache-&gt;<em>getBackendOptions()</em>. </p>
+<p>Only following cache backends are possible (and you cannot extend them to add functionality or fix bugs without touching the original class):</p>
+<ul>
+<li>memcached</li>
+<li>apc</li>
+<li>xcache</li>
+<li>eaccelerator / varien_cache_backend_eaccelerator</li>
+</ul>
+<p>Too bad, if you wanted to have your own first-level cache or an improved version of an existing one. You will need to touch this method to enable it. This method and the confusing configuration of the (implicit) two-level setup need some serious refactoring...</p>
+<h3>Related posts</h3>
+<ul>
+<li><a href="../../../magento-two-level-caching.html">Magento Two-Level-Caching</a></li>
+<li><a href="../../../magento-automatic-cache-cleaner.html">Magento Automatic Cache Cleaner</a></li>
+<li><a href="../../../magento-asynchronous-cache.html">Magento Asynchronous Cache</a></li>
+<li><a href="../../../wenn-der-apc-cache-volllaeuft.html">Wenn der APC Cache vollläuft</a></li>
+<li><a href="../../../magento-advanced-template-hints.html">Magento Advanced Template Hints</a></li>
+<li><a href="../../../magento-caching-internals.html">Magento Caching Internals</a></li>
+<li><a href="../../../meet-magento-5-2011-performance-durch-caching.html">Meet Magento #5 2011: Performance durch Caching</a></li>
+</ul>
+<h3>Further reading</h3>
+<ul>
+<li>Do you have a first-level cache available that is big enough for the complete cache? Then turn off the second-level by setting _slow_backend_store<em>data</em> in your local.xml: "<a href="http://www.byte.nl/blog/2011/06/16/speeding-up-magento-the-burden-of-two-level-cache/">Speeding up Magento: the burden of Two Level cache</a>"</li>
+<li><a href="http://framework.zend.com/manual/en/zend.cache.backends.html">Zend Framework documentation on cache backends</a>.</li>
+<li>Still not fed up with caching? Read this article on "<a href="http://msdn.microsoft.com/en-us/library/dd129907.aspx">Caching in the Distributed Environment</a>"</li>
+<li>Fed up with database cache and two-level caching? Searching for a single, fast cache that supports tags? Check out Vinai's <a href="http://magebase.com/magento-tutorials/improving-the-file-cache-backend/">symlink file cache backend</a> or Colin's <a href="https://github.com/colinmollenhour/Zend_Cache_Backend_Redis">Redis cache backend</a>!</li>
+</ul></p>
+
+        <div class="share">
+            <span>Share via: </span>
+            <ul>
+                <li><a target="_blank" href="https://twitter.com/home?status=Magento%20%2F%20Zend%20Framework%27s%20TwoLevels%20Cache%20Backend%20Mess%20http%3A%2F%2Ffbrnc.net%2Fblog%2F2011%2F10%2Fmagento-zend-frameworks-twolevels-cache-backend-mess%20%2Fvia%20%40fbrnc">Twitter</a></li>
+                <li><a target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=http%3A%2F%2Ffbrnc.net%2Fblog%2F2011%2F10%2Fmagento-zend-frameworks-twolevels-cache-backend-mess">Facebook</a></li>
+                <li><a target="_blank" href="https://plus.google.com/share?url=http%3A%2F%2Ffbrnc.net%2Fblog%2F2011%2F10%2Fmagento-zend-frameworks-twolevels-cache-backend-mess">Google+</a></li>
+                <li><a target="_blank" href="mailto:?subject=Reading Recommendation&amp;body=Check out this article: Magento / Zend Framework's TwoLevels Cache Backend Mess http%3A%2F%2Ffbrnc.net%2Fblog%2F2011%2F10%2Fmagento-zend-frameworks-twolevels-cache-backend-mess by Fabrizio Branca .">Mail</a></li>
+            </ul>
+        </div>
+
+        <h4>Comments</h4>
+        <div class="enable_comments_notice">
+            <p>This website uses <a href="https://disqus.com">disqus</a> for the commenting functionality. In order to protect your privacy comments are <em>disabled by default</em>.</p>
+            <a id="enable_comments" href="magento-zend-frameworks-twolevels-cache-backend-mess.html#">Enable Comments</a>
+        </div>
+        <div id="disqus_thread"></div>
+        <script type="text/javascript">
+            var disqus_shortname = 'fbrnc';
+                        var disqus_identifier = 'pages_2420';
+                    </script>
+
+    
+    </div>
+
+</div>
+			</div>
+			<div id="sidebar" class="block size-1-3 pure-u-1-3">
+				<div class="sidebar-content profile">
+    <div class="profile-image">
+        <img src="../../../user/themes/antimatter/images/fabrizio_polaroid.png" alt="Fabrizio Branca"/>
+    </div>
+    <div class="profile-content">
+        <p><strong>Hi, I'm Fabrizio!</strong></p>
+        <p>I'm a web developer from San Francisco, CA and I work for <a href="http://www.aoe.com">AOE</a>.</p>
+        <p>Follow me on <a href="https://twitter.com/fbrnc">Twitter</a> or check out my stuff on <a href="https://github.com/fbrnc">GitHub</a>.</p>
+            </div>
+</div>
+<div class="sidebar-content sidebar-certifications">
+    <h4>Certifications</h4>
+    <ul>
+        <li>
+            <img src="../../../user/themes/antimatter/images/cert/Solutions-Architect-Associate.png" alt="AWS Certified Solutions Architect - Associate"/>
+        </li>
+        <li>
+            <img src="../../../user/themes/antimatter/images/cert/Developer-Associate.png" alt="AWS Certified Developer - Associate"/>
+        </li>
+        <li>
+            <img src="../../../user/themes/antimatter/images/cert/SysOps-Administrator-Associate.png" alt="AWS Certified SysOps Administrator - Associate"/>
+        </li>
+        <li>
+            <a href="https://magento.com/blog/magento-news/meet-2016-magento-masters-mentors">
+                <img src="../../../user/themes/antimatter/images/cert/magento_master_2016.png" alt="Magento Masters 2016"/>
+            </a>
+        </li>
+        <li>
+            <a href="http://www.magentocommerce.com/certification/directory/dev/65753/">
+                <img src="../../../user/themes/antimatter/images/cert/magento_certified_developer_plus.png" alt="Magento Certified Developer Plus"/>
+            </a>
+        </li>
+        <li>
+            <a href="http://www.magentocommerce.com/certification/directory/dev/65753/">
+                <img src="../../../user/themes/antimatter/images/cert/frontend_developer.png" alt="Magento Certified Frontend Developer"/>
+            </a>
+        </li>
+        <li>
+            <a href="http://typo3.org/certification/about-the-certification/certified-typo3-cms-integrator-listing/show/branca-fabrizio/">
+                <img src="../../../user/themes/antimatter/images/cert/TYPO3-Certified-Integrator-black-140.png" alt="TYPO3 Certified Integrator"/>
+            </a>
+        </li>
+        <li>
+            <a href="http://www.zend.com/en/services/certification/zend-certified-engineer-directory#ClientCandidateID=ZEND009995&cid=0">
+                <img src="../../../user/themes/antimatter/images/cert/php5_zce_logo_new.gif" alt="Zend Certified Engineer"/>
+            </a>
+        </li>
+    </ul>
+</div>
+<div class="sidebar-content sidebar-tags">
+    <h4>Popular Tags</h4>
+    
+<span class="tags">
+                    <a class="" href="../../../tag%253AGallery.html">Gallery</a>
+                    <a class="" href="../../../tag%253AMagento.html">Magento</a>
+                    <a class="" href="../../../tag%253ADevelopment.html">Development</a>
+                    <a class="" href="../../../tag%253ATYPO3.html">TYPO3</a>
+                    <a class="" href="../../../tag%253APhotography.html">Photography</a>
+                    <a class="" href="../../../tag%253ASonstiges.html">Sonstiges</a>
+                    <a class="" href="../../../tag%253A30&#32;day&#32;photo&#32;challenge.html">30 day photo challenge</a>
+                    <a class="" href="../../../tag%253APfadfinder.html">Pfadfinder</a>
+                    <a class="" href="../../../tag%253ACaching.html">Caching</a>
+                    <a class="" href="../../../tag%253AAWS.html">AWS</a>
+                    <a class="" href="http://fbrnc.net/tag:Flash/Actionscript">Flash/Actionscript</a>
+                    <a class="" href="../../../tag%253APortfolio.html">Portfolio</a>
+                    <a class="" href="../../../tag%253ACloudFormation.html">CloudFormation</a>
+                    <a class="" href="../../../tag%253AVarnish.html">Varnish</a>
+                    <a class="" href="../../../tag%253ALambda.html">Lambda</a>
+                    <a class="" href="../../../tag%253AHome.html">Home</a>
+                    <a class="" href="../../../tag%253ABücher.html">Bücher</a>
+                    <a class="" href="../../../tag%253APresentation.html">Presentation</a>
+                    <a class="" href="../../../tag%253ADesign.html">Design</a>
+                    <a class="" href="../../../tag%253AOpen&#32;Source.html">Open Source</a>
+                    <a class="" href="../../../tag%253AStudium.html">Studium</a>
+                    <a class="" href="../../../tag%253ADeployment.html">Deployment</a>
+                    <a class="" href="../../../tag%253AOpsWorks.html">OpsWorks</a>
+                    <a class="" href="../../../tag%253AMeetup.html">Meetup</a>
+                    <a class="" href="../../../tag%253AKISS.html">KISS</a>
+                    <a class="" href="../../../tag%253ASNS.html">SNS</a>
+                    <a class="" href="../../../tag%253AMicroservices.html">Microservices</a>
+                    <a class="" href="../../../tag%253AArchitecture.html">Architecture</a>
+                    <a class="" href="../../../tag%253AKinesis.html">Kinesis</a>
+                    <a class="" href="../../../tag%253ASQS.html">SQS</a>
+                    <a class="" href="../../../tag%253AWorkflow.html">Workflow</a>
+                    <a class="" href="../../../tag%253AJMeter.html">JMeter</a>
+                    <a class="" href="../../../tag%253AGrav.html">Grav</a>
+                    <a class="" href="../../../tag%253AInfrastructure&#32;as&#32;Code.html">Infrastructure as Code</a>
+                    <a class="" href="../../../tag%253ADevOps.html">DevOps</a>
+                    <a class="" href="../../../tag%253AVideos.html">Videos</a>
+                    <a class="" href="../../../tag%253ALightroom.html">Lightroom</a>
+                    <a class="" href="../../../tag%253AScaling.html">Scaling</a>
+                    <a class="" href="../../../tag%253ATricks.html">Tricks</a>
+                    <a class="" href="../../../tag%253AMPMD.html">MPMD</a>
+                    <a class="" href="../../../tag%253ACache.html">Cache</a>
+                    <a class="" href="../../../tag%253ACMS.html">CMS</a>
+                    <a class="" href="../../../tag%253APerformance.html">Performance</a>
+                    <a class="" href="../../../tag%253AGit.html">Git</a>
+    </span>
+</div>
+<div class="sidebar-content sidebar-archives">
+    <h4>Archives</h4>
+	<ul class="archives">
+
+
+                    </ul><ul class="archives">
+        <li class="caption">2016</li>
+        <li>
+        <a href="../../../month%253Amay_2016.html" title="May 2016">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2016.html" title="March 2016">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajan_2016.html" title="January 2016">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2015</li>
+        <li>
+        <a href="../../../month%253Aoct_2015.html" title="October 2015">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2015.html" title="June 2015">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2015.html" title="April 2015">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2014</li>
+        <li>
+        <a href="../../../month%253Adec_2014.html" title="December 2014">
+                <span class="label">5</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2014.html" title="November 2014">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2014.html" title="May 2014">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2014.html" title="March 2014">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2014.html" title="February 2014">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2013</li>
+        <li>
+        <a href="../../../month%253Adec_2013.html" title="December 2013">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2013.html" title="August 2013">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2013.html" title="July 2013">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2013.html" title="May 2013">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2013.html" title="April 2013">
+                <span class="label">10</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2013.html" title="March 2013">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2013.html" title="February 2013">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2012</li>
+        <li>
+        <a href="../../../month%253Adec_2012.html" title="December 2012">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2012.html" title="November 2012">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2012.html" title="October 2012">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2012.html" title="September 2012">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2012.html" title="August 2012">
+                <span class="label">7</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2012.html" title="July 2012">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2012.html" title="June 2012">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2012.html" title="May 2012">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2012.html" title="April 2012">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2012.html" title="March 2012">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2012.html" title="February 2012">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2011</li>
+        <li>
+        <a href="../../../month%253Adec_2011.html" title="December 2011">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2011.html" title="November 2011">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2011.html" title="October 2011">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2011.html" title="September 2011">
+                <span class="label">17</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2011.html" title="August 2011">
+                <span class="label">26</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2011.html" title="July 2011">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2011.html" title="June 2011">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2011.html" title="May 2011">
+                <span class="label">9</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2011.html" title="April 2011">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2011.html" title="March 2011">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2011.html" title="February 2011">
+                <span class="label">9</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2010</li>
+        <li>
+        <a href="../../../month%253Adec_2010.html" title="December 2010">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2010.html" title="October 2010">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2010.html" title="August 2010">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2010.html" title="July 2010">
+                <span class="label">6</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2010.html" title="June 2010">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2010.html" title="April 2010">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2010.html" title="March 2010">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2010.html" title="February 2010">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2009</li>
+        <li>
+        <a href="../../../month%253Adec_2009.html" title="December 2009">
+                <span class="label">7</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2009.html" title="November 2009">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2009.html" title="October 2009">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2009.html" title="September 2009">
+                <span class="label">6</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2009.html" title="August 2009">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2009.html" title="July 2009">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2009.html" title="June 2009">
+                <span class="label">5</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2009.html" title="May 2009">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2009.html" title="February 2009">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajan_2009.html" title="January 2009">
+                <span class="label">5</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2008</li>
+        <li>
+        <a href="../../../month%253Adec_2008.html" title="December 2008">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2008.html" title="November 2008">
+                <span class="label">11</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2008.html" title="August 2008">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2008.html" title="May 2008">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2008.html" title="April 2008">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2008.html" title="March 2008">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2008.html" title="February 2008">
+                <span class="label">7</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajan_2008.html" title="January 2008">
+                <span class="label">10</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2007</li>
+        <li>
+        <a href="../../../month%253Adec_2007.html" title="December 2007">
+                <span class="label">25</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2007.html" title="November 2007">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2007.html" title="October 2007">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2007.html" title="September 2007">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2007.html" title="June 2007">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2007.html" title="May 2007">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2007.html" title="February 2007">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajan_2007.html" title="January 2007">
+                <span class="label">7</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2006</li>
+        <li>
+        <a href="../../../month%253Adec_2006.html" title="December 2006">
+                <span class="label">5</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2006.html" title="November 2006">
+                <span class="label">14</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2006.html" title="October 2006">
+                <span class="label">9</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2006.html" title="September 2006">
+                <span class="label">7</span>
+                </a>
+    </li>
+</ul>
+</div>
+			</div>
+		</div>
+	
+                                    
+        </section>
+        
+                <footer id="footer">
+            <div class="totop">
+                <span><a href="magento-zend-frameworks-twolevels-cache-backend-mess.html#" id="toTop"><i class="fa fa-arrow-up"></i></a></span>
+            </div>
+            <p>Powered by <a href="http://getgrav.org">Grav</a>.</p>
+            <p>
+                <a href="../../../blog.atom.html"><i class="fa fa-rss-square"></i> Atom 1.0</a> |
+                <a href="../../../blog.rss.html"><i class="fa fa-rss-square"></i> RSS</a> |
+                <a href="http://fbrnc.net/sitemap">Sitemap</a>
+            </p>
+        </footer>
+            </div>
+    <div class="sb-slidebar sb-left sb-width-thin">
+        <div id="panel">
+        
+<ul class="navigation">
+                                    <li class="active">
+                <a href="../../../index.html">
+                                        Blog
+                </a>
+            </li>
+                                <li class="">
+                <a href="../../../privacy-policy.html">
+                                        Privacy Policy
+                </a>
+            </li>
+                                <li class="">
+                <a href="../../../contact.html">
+                                        Contact
+                </a>
+            </li>
+                    </ul>
+
+        </div>
+    </div>
+            
+        <script>
+        $(function () {
+            $(document).ready(function() {
+              $.slidebars({
+                hideControlClasses: true,
+                scrollLock: true
+              });
+            });
+        });
+        </script>
+    </body>
+</html>
+<!-- Generated: 2016-07-24T08:36:19+02:00 -->

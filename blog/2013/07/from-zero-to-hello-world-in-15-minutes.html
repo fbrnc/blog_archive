@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="utf-8" />
+    <title>From Zero To Hello World in 15 Minutes | Fabrizio Branca</title>
+    <meta name="generator" content="GravCMS" />
+<meta name="description" content="Web Development" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="icon" type="image/png" href="http://fbrnc.net/user/themes/antimatter/images/favicon.png" />
+    <link rel="canonical" href="from-zero-to-hello-world-in-15-minutes.html" />
+
+                                                            
+                        <link href="../../../assets/69aec95887701d23e4d88f5cc08d450b.css@g-db0a965f.css" type="text/css" rel="stylesheet" />
+
+
+                                                                            <script src="../../../assets/0ce5b591987de495cd9ba62b91568c73.js@g-db0a965f" type="text/javascript" ></script>
+
+
+</head>
+<body id="top" class="">
+    <div id="sb-site">
+                <header id="header">
+
+            <div id="logo">
+                <h3><a href="../../../index.html"><span class="firstline">Fabrizio</span><span class="secondline">Branca
+            </div>
+            <div id="navbar">
+                                                
+<ul class="navigation">
+                                    <li class="active">
+                <a href="../../../index.html">
+                                        Blog
+                </a>
+            </li>
+                                <li class="">
+                <a href="../../../privacy-policy.html">
+                                        Privacy Policy
+                </a>
+            </li>
+                                <li class="">
+                <a href="../../../contact.html">
+                                        Contact
+                </a>
+            </li>
+                    </ul>
+
+                                <span class="panel-activation sb-toggle-left navbar-left menu-btn fa fa-bars"></span>
+            </div>
+
+        </header>
+        
+        
+                <section id="body" class="">
+            					
+<div id="breadcrumbs" itemscope itemtype="http://data-vocabulary.org/Breadcrumb">
+                            <a href="../../../index.html" itemprop="url"><span itemprop="title">Blog</span></a>
+            <i class="fa fa-angle-right"></i>
+                                <a href="http://fbrnc.net/blog/2013" itemprop="url"><span itemprop="title">2013</span></a>
+            <i class="fa fa-angle-right"></i>
+                                <a href="http://fbrnc.net/blog/2013/07" itemprop="url"><span itemprop="title">07</span></a>
+            <i class="fa fa-angle-right"></i>
+                                                <span itemprop="title">From Zero To Hello World in 15 Minutes</span>
+                        </div>
+				
+		<div class="blog-content-item grid pure-g-r">
+			<div id="item" class="block pure-u-2-3">
+ 			    <div class="list-item">
+
+    <div class="list-blog-header">
+        <span class="list-blog-date">
+            <span>18 Jul</span>
+            <em>2013</em>
+        </span>
+        <h2><a href="from-zero-to-hello-world-in-15-minutes.html" class="post-title">From Zero To Hello World in 15 Minutes</a></h2>
+                <span class="tags">
+                        <a href="../../../tag%253AMagento.html">Magento</a>
+                    </span>
+                
+    </div>
+
+    <div class="list-blog-padding">
+            <p><p>In this blog post I'd like to share some snippets of my presentation at the last <a href="http://www.meetup.com/San-Francisco-Magento-Users-group/events/124688802/">San Francisco Magento Meetup</a>. </p>
+<p>Starting from a blank server we're going to install MySQL, php-fpm and nginx, then create a simple "Hello World" module. The purpose of this presentation was not to show how to setup a production server, but to show how to get a development environment up and running in no time and what tools are out there to help you with that. </p>
+<h3>Prerequisites</h3>
+<p>In this tutorial we're going to use <a href="https://www.virtualbox.org/">Virtualbox</a> and <a href="http://www.vagrantup.com/">Vagrant</a>. Installing this should be easy. So if you aren't already using it grab a copy and install it on your computer. </p>
+<h3>Creating a vagrant box</h3>
+<p>Now let's create a Ubuntu based virtual machine. I'm using precise32 in this example, but you could also use precise64 or any other base box you can find on <a href="http://www.vagrantbox.es/">http://www.vagrantbox.es/</a> (If you're running into problem with a 64bit box check if 64bit virtualization is enabled in your BIOS.) </p>
+<pre><code class="language-bash">vagrant box add precise32 http:// files.vagrantup.com/precise32.box vagrant init precise32</code></pre>
+<p>(I added an extra space between http:// and files... so this isn't rendered as a link in this blog post. Please remove this extra space after pasting...)  </p>
+<h3>Edit the vagrantfile</h3>
+<p>Vagrant created a file called Vagrantfile in the current directory. We want to add another port forwarding rule there so we'll be able to access Magento using <a href="http://localhost">localhost</a> later. </p>
+<pre><code>config.vm.network :forwarded_port, guest: 80, host: 80</code></pre>
+<p>If you're running Skype port 80 is probably blocked. Shutdown Skype or choose another port here. </p>
+<h3>Start the vagrant box</h3>
+<p>Starting the vagrant box is easy. Just type <code>vagrant up</code> and wait a couple of minutes. Try <code>vagrant ssh</code> to log into the box after it finished booting. Depending on your setup this doesn't work, but vagrant will tell you how to configure your ssh client (e.g. Putty) to log into the box. Logging in to 127.0.0.1:2222 with username "vagrant" and password "vagrant" will probably work. </p>
+<h3>Become root</h3>
+<p>You shouldn't work as root on a real server, but for this presentation we're breaking this rule and continue working as root from now on. Type the following command: </p>
+<pre><code class="language-bash">sudo su</code></pre>
+<h3>Install some packages</h3>
+<p>First of all let's install a bunch of packages to get everything we need from the Ubuntu package repositories: </p>
+<pre><code class="language-bash">apt-get update &amp;&amp; apt-get install vim curl nginx php5-fpm mysql-server mysql-client php5-cli php5-mysql php5-mcrypt php5-gd php5-curl php-apc -y</code></pre>
+<h3>Install some tools</h3>
+<p>Let's also install two of my favorite tools. We're going to need them later: </p>
+<pre><code>curl -o /usr/bin/modman https://raw.github.com/colinmollenhour/modman/master/modman &amp;&amp; chmod +x /usr/bin/modman   
+curl -o /usr/bin/n98-magerun.phar https://raw.github.com/netz98/n98-magerun/master/n98-magerun.phar &amp;&amp; chmod +x /usr/bin/n98-magerun.phar</code></pre>
+<h3>Create a database</h3>
+<p>While installing the packages Ubuntu asked for a root password for the MySQL server. Log in and create the database that we're going to use for Magento: </p>
+<pre><code>mysql -uroot -proot   
+CREATE USER 'play'@'localhost' IDENTIFIED BY 'play';   
+GRANT USAGE ON *.* TO 'play'@'localhost' IDENTIFIED BY 'play' WITH MAX_QUERIES_PER_HOUR 0 MAX_CONNECTIONS_PER_HOUR 0 MAX_UPDATES_PER_HOUR 0 MAX_USER_CONNECTIONS 0;   
+CREATE DATABASE IF NOT EXISTS play DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;   
+GRANT ALL PRIVILEGES ON `play`.* TO 'play'@'localhost';   
+FLUSH PRIVILEGES;</code></pre>
+<h3>Prepare webroot</h3>
+<p>Now let's create a directory that we're going to use as webroot: </p>
+<pre><code>mkdir -p /var/www/magento/htdocs</code></pre>
+<h3>Enable php in nginx</h3>
+<p>Depending on the Ubuntu version php-fpm is configured to listen to an ip address or to a unix socket by default. In precise32 this is the ip addres. </p>
+<p>Go to <code>/etc/nginx/sites-enabled/default</code> and uncomment the lines that come with nginx's default configuration. Then restart nginx with <code>service nginx restart</code>. </p>
+<h3>Test php</h3>
+<p>Let's verify that php and nginx are working correctly. Create a simple file: </p>
+<pre><code>echo '&lt;?php phpinfo();' &gt; /var/www/magento/htdocs/info.php</code></pre>
+<p>... and hit <a href="http://127.0.0.1/info.php">127.0.0.1/info.php</a>. You should see the phpinfo() output now. </p>
+<h3>Configure nginx for Magento</h3>
+<p>When run Magento with Apache a mod_rewrite rule takes care of redirecting all urls to index.php. In nginx this works slightly different: </p>
+<p>Edit <code>/etc/nginx/sites-enabled/default</code>and restart nginx with <code>service nginx restart</code> afterwards: </p>
+<pre><code>server {  
+    listen 80;  
+    listen [::]:80 default_server ipv6only=on;  
+
+    root /var/www/magento/htdocs;  
+    index index.html index.php;  
+    server_name localhost;  
+
+    location / {  
+        try_files $uri $uri/ @handler;  
+    }  
+
+    location @handler { ## Magento uses a common front handler  
+        rewrite / /index.php;  
+    }  
+
+    location ~ \.php$ {  
+        fastcgi_split_path_info ^(.+\.php)(/.+)$;  
+        # fastcgi_pass unix:/var/run/php5-fpm.sock;  
+        fastcgi_pass     127.0.0.1:9000;  
+        fastcgi_index index.php;  
+        include fastcgi_params;  
+    }  
+}</code></pre>
+<h3>Installing Magento</h3>
+<p>Now let's install Magento using n98-magerun. Run this command and follow the interactive instructions (use '.' as the destination directory): </p>
+<pre><code>cd /var/www/magento/htdocs  
+n98-magerun.phar install</code></pre>
+<h3>Fix permissions</h3>
+<p>We did everything so far being root, remember? Nginx (like Apache) runs PHP as the www-data user. So let's fix the permissions: </p>
+<pre><code>sudo chmod -R ug+rw /var/www &amp;&amp; sudo chgrp -R www-data /var/www</code></pre>
+<h3>Hit Magento</h3>
+<p>Now hit Magento here <a href="http://127.0.0.1/">127.0.0.1</a> and verify links are working too. </p>
+<h3>Make nginx secure</h3>
+<p>We started with a very simple nginx configuration. This is fine for a local devbox that is not accessible from anywhere else than your host system, but should never by configured like this on a production system. Try hitting </p>
+<pre><code>[127.0.0.1/app/etc/local.xml](http://127.0.0.1/app/etc/local.xml)</code></pre>
+<p>and you'll see nginx delivering your local.xml including the plain text database credentials. </p>
+<p>In order to prevent this let's add some more lines to the server{} block in <code>/etc/nginx/sites-enabled/default</code>: </p>
+<pre><code>location /app/                       { deny all; }  
+location /includes/                  { deny all; }  
+location /lib/                       { deny all; }  
+location /media/downloadable/        { deny all; }  
+location /pkginfo/                   { deny all; }  
+location /report/config.xml          { deny all; }  
+location /var/                       { deny all; }  
+location  /.                         { deny all; }</code></pre>
+<h3>Modman</h3>
+<p>OK, now let's kickstart our first module. I'd like to use the <a href="https://github.com/colinmollenhour/modman">modman</a> script for everything I do with Magento. By default modman assumes you'll put your <code>.modman</code> folder inside your webroot. I prefer putting it one level up and configuring modman to take this extra level into account by adding a <code>.basedir</code> file to the <code>.modman</code> folder: (All modules stay compatible without any changes). </p>
+<pre><code>mkdir -p /var/www/magento/.modman  
+echo "htdocs/" &gt; /var/www/magento/.modman/.basedir</code></pre>
+<h3>Redis</h3>
+<p>Before we start our own module let's install and configure Redis real quick. This way we'll also get familiar with modman. </p>
+<p>First install redis (and git): </p>
+<pre><code>apt-get install redis-server git -y</code></pre>
+<p>Now install Colin Mollenhour's brilliant Redis cache backend (yes, that's the same guy that create modman): </p>
+<pre><code>cd /var/www/magento/.modman  
+git clone --recursive  https://github.com/colinmollenhour/Cm_Cache_Backend_Redis.git</code></pre>
+<p>Finally got to <code>app/etc/local.xml</code> and configure Magento to use the new cache backend. This snippet is taken from the module's readme file and works great out of the box: </p>
+<pre><code>&lt;cache&gt;  
+    &lt;backend&gt;Cm_Cache_Backend_Redis&lt;/backend&gt;  
+    &lt;backend_options&gt;  
+        &lt;server&gt;127.0.0.1&lt;/server&gt; &lt;!-- or absolute path to unix socket --&gt;  
+        &lt;port&gt;6379&lt;/port&gt;  
+        &lt;persistent&gt;&lt;/persistent&gt; &lt;!-- Specify a unique string like "cache-db0" to enable persistent connections. --&gt;  
+        &lt;database&gt;0&lt;/database&gt;  
+        &lt;password&gt;&lt;/password&gt;  
+        &lt;force_standalone&gt;0&lt;/force_standalone&gt;  &lt;!-- 0 for phpredis, 1 for standalone PHP --&gt;  
+        &lt;connect_retries&gt;1&lt;/connect_retries&gt;    &lt;!-- Reduces errors due to random connection failures --&gt;  
+        &lt;read_timeout&gt;10&lt;/read_timeout&gt;         &lt;!-- Set read timeout duration --&gt;  
+        &lt;automatic_cleaning_factor&gt;0&lt;/automatic_cleaning_factor&gt; &lt;!-- Disabled by default --&gt;  
+        &lt;compress_data&gt;1&lt;/compress_data&gt;  &lt;!-- 0-9 for compression level, recommended: 0 or 1 --&gt;  
+        &lt;compress_tags&gt;1&lt;/compress_tags&gt;  &lt;!-- 0-9 for compression level, recommended: 0 or 1 --&gt;  
+        &lt;compress_threshold&gt;20480&lt;/compress_threshold&gt;  &lt;!-- Strings below this size will not be compressed --&gt;  
+        &lt;compression_lib&gt;gzip&lt;/compression_lib&gt; &lt;!-- Supports gzip, lzf and snappy --&gt;  
+    &lt;/backend_options&gt;  
+&lt;/cache&gt;</code></pre>
+<p>Deploy the module using this command: </p>
+<pre><code>cd /var/www/magento  
+modman deploy-all </code></pre>
+<p>Delete all files from the cache directory (<code>rm -rf /var/www/magento/htdocs/var/cache/*</code>) and verify that no files are being written after hitting Magento with caches being enabled. Type <code>redis-cli info</code> to verify that a Redis database was automatically created and contains some data (will show something like <code>db0:keys=XX,expires=YY</code>) </p>
+<h3>Kickstart Hello, World module</h3>
+<p>First let's create some basic folders: </p>
+<pre><code>cd /var/www/magento/.modman  
+mkdir -p Meetup_HelloWorld/app/etc/modules  
+mkdir -p Meetup_HelloWorld/app/code/community/Meetup/HelloWorld/etc  
+mkdir -p Meetup_HelloWorld/app/code/community/Meetup/HelloWorld/controllers</code></pre>
+<h4>Now let's add a file to app/etc/modules/:</h4>
+<p>vi Meetup_HelloWorld/app/etc/modules/Meetup_HelloWorld.xml </p>
+<pre><code>&lt;?xml version="1.0" encoding="UTF-8"?&gt;  
+&lt;config&gt;  
+    &lt;modules&gt;  
+        &lt;Meetup_HelloWorld&gt;  
+            &lt;active&gt;true&lt;/active&gt;  
+            &lt;codePool&gt;community&lt;/codePool&gt;  
+        &lt;/Meetup_HelloWorld&gt;  
+    &lt;/modules&gt;  
+&lt;/config&gt;</code></pre>
+<h4>... the module's config.xml:</h4>
+<p>vi Meetup_HelloWorld/app/code/community/Meetup/HelloWorld/etc/config.xml </p>
+<pre><code>&lt;?xml version="1.0" encoding="UTF-8"?&gt;  
+&lt;config&gt;  
+
+    &lt;modules&gt;  
+        &lt;Meetup_HelloWorld&gt;  
+            &lt;version&gt;0.0.1&lt;/version&gt;  
+        &lt;/Meetup_HelloWorld&gt;  
+    &lt;/modules&gt;  
+
+    &lt;frontend&gt;  
+        &lt;routers&gt;  
+            &lt;meetup_helloworld&gt;  
+                &lt;use&gt;standard&lt;/use&gt;  
+                &lt;args&gt;  
+                    &lt;module&gt;Meetup_HelloWorld&lt;/module&gt;  
+                    &lt;frontName&gt;meetup&lt;/frontName&gt;  
+                &lt;/args&gt;  
+            &lt;/meetup_helloworld&gt;  
+        &lt;/routers&gt;  
+    &lt;/frontend&gt;  
+&lt;/config&gt;</code></pre>
+<h4>... and the actual controller file</h4>
+<p>vi Meetup_HelloWorld/app/code/community/Meetup/HelloWorld/controllers/IndexController.php </p>
+<pre><code>&lt;?php  
+
+class Meetup_HelloWorld_IndexController extends Mage_Core_Controller_Front_Action {  
+
+    public function indexAction() {  
+        $this-&gt;getResponse()  
+            -&gt;setHeader('Content-Type', 'text/plain')  
+            -&gt;setBody('Hello, World!');  
+    }  
+
+}</code></pre>
+<p>Now, we have to create a modman configuration file (<code>vi Meetup_HelloWorld/modman</code>): </p>
+<pre><code>app/etc/modules/*       app/etc/modules/  
+app/code/community/Meetup/HelloWorld/ app/code/community/Meetup/HelloWorld</code></pre>
+<p>... and deploy the module using this command: </p>
+<pre><code>cd /var/www/magento  
+modman deploy-all</code></pre>
+<p>Now, let's clear the cache... </p>
+<pre><code>cd /var/www/magento/htdocs  
+n98-magerun.sh cache:flush</code></pre>
+<p>... and hit our new controller in the frontend: </p>
+<p><a href="http://127.0.0.1/meetup/index/index">127.0.0.1/meetup/index/index</a></p>
+<h3>Add layout</h3>
+<p>Our current controller is pretty boring and bypasses Magento's layout concept. Change the content of the indexAction method to this to show the text embedded into the default layout: </p>
+<pre><code>$this-&gt;loadLayout();  
+$block = $this-&gt;getLayout()-&gt;createBlock('Mage_Core_Block_Text')-&gt;setText('Hello, World!');  
+$this-&gt;getLayout()-&gt;getBlock('content')-&gt;append($block);  
+$this-&gt;renderLayout();</code></pre>
+<h3>Have fun!</h3></p>
+
+        <div class="share">
+            <span>Share via: </span>
+            <ul>
+                <li><a target="_blank" href="https://twitter.com/home?status=From%20Zero%20To%20Hello%20World%20in%2015%20Minutes%20http%3A%2F%2Ffbrnc.net%2Fblog%2F2013%2F07%2Ffrom-zero-to-hello-world-in-15-minutes%20%2Fvia%20%40fbrnc">Twitter</a></li>
+                <li><a target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=http%3A%2F%2Ffbrnc.net%2Fblog%2F2013%2F07%2Ffrom-zero-to-hello-world-in-15-minutes">Facebook</a></li>
+                <li><a target="_blank" href="https://plus.google.com/share?url=http%3A%2F%2Ffbrnc.net%2Fblog%2F2013%2F07%2Ffrom-zero-to-hello-world-in-15-minutes">Google+</a></li>
+                <li><a target="_blank" href="mailto:?subject=Reading Recommendation&amp;body=Check out this article: From Zero To Hello World in 15 Minutes http%3A%2F%2Ffbrnc.net%2Fblog%2F2013%2F07%2Ffrom-zero-to-hello-world-in-15-minutes by Fabrizio Branca .">Mail</a></li>
+            </ul>
+        </div>
+
+        <h4>Comments</h4>
+        <div class="enable_comments_notice">
+            <p>This website uses <a href="https://disqus.com">disqus</a> for the commenting functionality. In order to protect your privacy comments are <em>disabled by default</em>.</p>
+            <a id="enable_comments" href="from-zero-to-hello-world-in-15-minutes.html#">Enable Comments</a>
+        </div>
+        <div id="disqus_thread"></div>
+        <script type="text/javascript">
+            var disqus_shortname = 'fbrnc';
+                        var disqus_identifier = 'pages_2542';
+                    </script>
+
+    
+    </div>
+
+</div>
+			</div>
+			<div id="sidebar" class="block size-1-3 pure-u-1-3">
+				<div class="sidebar-content profile">
+    <div class="profile-image">
+        <img src="../../../user/themes/antimatter/images/fabrizio_polaroid.png" alt="Fabrizio Branca"/>
+    </div>
+    <div class="profile-content">
+        <p><strong>Hi, I'm Fabrizio!</strong></p>
+        <p>I'm a web developer from San Francisco, CA and I work for <a href="http://www.aoe.com">AOE</a>.</p>
+        <p>Follow me on <a href="https://twitter.com/fbrnc">Twitter</a> or check out my stuff on <a href="https://github.com/fbrnc">GitHub</a>.</p>
+            </div>
+</div>
+<div class="sidebar-content sidebar-certifications">
+    <h4>Certifications</h4>
+    <ul>
+        <li>
+            <img src="../../../user/themes/antimatter/images/cert/Solutions-Architect-Associate.png" alt="AWS Certified Solutions Architect - Associate"/>
+        </li>
+        <li>
+            <img src="../../../user/themes/antimatter/images/cert/Developer-Associate.png" alt="AWS Certified Developer - Associate"/>
+        </li>
+        <li>
+            <img src="../../../user/themes/antimatter/images/cert/SysOps-Administrator-Associate.png" alt="AWS Certified SysOps Administrator - Associate"/>
+        </li>
+        <li>
+            <a href="https://magento.com/blog/magento-news/meet-2016-magento-masters-mentors">
+                <img src="../../../user/themes/antimatter/images/cert/magento_master_2016.png" alt="Magento Masters 2016"/>
+            </a>
+        </li>
+        <li>
+            <a href="http://www.magentocommerce.com/certification/directory/dev/65753/">
+                <img src="../../../user/themes/antimatter/images/cert/magento_certified_developer_plus.png" alt="Magento Certified Developer Plus"/>
+            </a>
+        </li>
+        <li>
+            <a href="http://www.magentocommerce.com/certification/directory/dev/65753/">
+                <img src="../../../user/themes/antimatter/images/cert/frontend_developer.png" alt="Magento Certified Frontend Developer"/>
+            </a>
+        </li>
+        <li>
+            <a href="http://typo3.org/certification/about-the-certification/certified-typo3-cms-integrator-listing/show/branca-fabrizio/">
+                <img src="../../../user/themes/antimatter/images/cert/TYPO3-Certified-Integrator-black-140.png" alt="TYPO3 Certified Integrator"/>
+            </a>
+        </li>
+        <li>
+            <a href="http://www.zend.com/en/services/certification/zend-certified-engineer-directory#ClientCandidateID=ZEND009995&cid=0">
+                <img src="../../../user/themes/antimatter/images/cert/php5_zce_logo_new.gif" alt="Zend Certified Engineer"/>
+            </a>
+        </li>
+    </ul>
+</div>
+<div class="sidebar-content sidebar-tags">
+    <h4>Popular Tags</h4>
+    
+<span class="tags">
+                    <a class="" href="../../../tag%253AGallery.html">Gallery</a>
+                    <a class="" href="../../../tag%253AMagento.html">Magento</a>
+                    <a class="" href="../../../tag%253ADevelopment.html">Development</a>
+                    <a class="" href="../../../tag%253ATYPO3.html">TYPO3</a>
+                    <a class="" href="../../../tag%253APhotography.html">Photography</a>
+                    <a class="" href="../../../tag%253ASonstiges.html">Sonstiges</a>
+                    <a class="" href="../../../tag%253A30&#32;day&#32;photo&#32;challenge.html">30 day photo challenge</a>
+                    <a class="" href="../../../tag%253APfadfinder.html">Pfadfinder</a>
+                    <a class="" href="../../../tag%253ACaching.html">Caching</a>
+                    <a class="" href="../../../tag%253AAWS.html">AWS</a>
+                    <a class="" href="http://fbrnc.net/tag:Flash/Actionscript">Flash/Actionscript</a>
+                    <a class="" href="../../../tag%253APortfolio.html">Portfolio</a>
+                    <a class="" href="../../../tag%253ACloudFormation.html">CloudFormation</a>
+                    <a class="" href="../../../tag%253AVarnish.html">Varnish</a>
+                    <a class="" href="../../../tag%253ALambda.html">Lambda</a>
+                    <a class="" href="../../../tag%253AHome.html">Home</a>
+                    <a class="" href="../../../tag%253ABücher.html">Bücher</a>
+                    <a class="" href="../../../tag%253APresentation.html">Presentation</a>
+                    <a class="" href="../../../tag%253ADesign.html">Design</a>
+                    <a class="" href="../../../tag%253AOpen&#32;Source.html">Open Source</a>
+                    <a class="" href="../../../tag%253AStudium.html">Studium</a>
+                    <a class="" href="../../../tag%253ADeployment.html">Deployment</a>
+                    <a class="" href="../../../tag%253AOpsWorks.html">OpsWorks</a>
+                    <a class="" href="../../../tag%253AMeetup.html">Meetup</a>
+                    <a class="" href="../../../tag%253AKISS.html">KISS</a>
+                    <a class="" href="../../../tag%253ASNS.html">SNS</a>
+                    <a class="" href="../../../tag%253AMicroservices.html">Microservices</a>
+                    <a class="" href="../../../tag%253AArchitecture.html">Architecture</a>
+                    <a class="" href="../../../tag%253AKinesis.html">Kinesis</a>
+                    <a class="" href="../../../tag%253ASQS.html">SQS</a>
+                    <a class="" href="../../../tag%253AWorkflow.html">Workflow</a>
+                    <a class="" href="../../../tag%253AJMeter.html">JMeter</a>
+                    <a class="" href="../../../tag%253AGrav.html">Grav</a>
+                    <a class="" href="../../../tag%253AInfrastructure&#32;as&#32;Code.html">Infrastructure as Code</a>
+                    <a class="" href="../../../tag%253ADevOps.html">DevOps</a>
+                    <a class="" href="../../../tag%253AVideos.html">Videos</a>
+                    <a class="" href="../../../tag%253ALightroom.html">Lightroom</a>
+                    <a class="" href="../../../tag%253AScaling.html">Scaling</a>
+                    <a class="" href="../../../tag%253ATricks.html">Tricks</a>
+                    <a class="" href="../../../tag%253AMPMD.html">MPMD</a>
+                    <a class="" href="../../../tag%253ACache.html">Cache</a>
+                    <a class="" href="../../../tag%253ACMS.html">CMS</a>
+                    <a class="" href="../../../tag%253APerformance.html">Performance</a>
+                    <a class="" href="../../../tag%253AGit.html">Git</a>
+    </span>
+</div>
+<div class="sidebar-content sidebar-archives">
+    <h4>Archives</h4>
+	<ul class="archives">
+
+
+                    </ul><ul class="archives">
+        <li class="caption">2016</li>
+        <li>
+        <a href="../../../month%253Amay_2016.html" title="May 2016">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2016.html" title="March 2016">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajan_2016.html" title="January 2016">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2015</li>
+        <li>
+        <a href="../../../month%253Aoct_2015.html" title="October 2015">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2015.html" title="June 2015">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2015.html" title="April 2015">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2014</li>
+        <li>
+        <a href="../../../month%253Adec_2014.html" title="December 2014">
+                <span class="label">5</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2014.html" title="November 2014">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2014.html" title="May 2014">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2014.html" title="March 2014">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2014.html" title="February 2014">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2013</li>
+        <li>
+        <a href="../../../month%253Adec_2013.html" title="December 2013">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2013.html" title="August 2013">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2013.html" title="July 2013">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2013.html" title="May 2013">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2013.html" title="April 2013">
+                <span class="label">10</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2013.html" title="March 2013">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2013.html" title="February 2013">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2012</li>
+        <li>
+        <a href="../../../month%253Adec_2012.html" title="December 2012">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2012.html" title="November 2012">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2012.html" title="October 2012">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2012.html" title="September 2012">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2012.html" title="August 2012">
+                <span class="label">7</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2012.html" title="July 2012">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2012.html" title="June 2012">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2012.html" title="May 2012">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2012.html" title="April 2012">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2012.html" title="March 2012">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2012.html" title="February 2012">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2011</li>
+        <li>
+        <a href="../../../month%253Adec_2011.html" title="December 2011">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2011.html" title="November 2011">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2011.html" title="October 2011">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2011.html" title="September 2011">
+                <span class="label">17</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2011.html" title="August 2011">
+                <span class="label">26</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2011.html" title="July 2011">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2011.html" title="June 2011">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2011.html" title="May 2011">
+                <span class="label">9</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2011.html" title="April 2011">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2011.html" title="March 2011">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2011.html" title="February 2011">
+                <span class="label">9</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2010</li>
+        <li>
+        <a href="../../../month%253Adec_2010.html" title="December 2010">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2010.html" title="October 2010">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2010.html" title="August 2010">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2010.html" title="July 2010">
+                <span class="label">6</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2010.html" title="June 2010">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2010.html" title="April 2010">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2010.html" title="March 2010">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2010.html" title="February 2010">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2009</li>
+        <li>
+        <a href="../../../month%253Adec_2009.html" title="December 2009">
+                <span class="label">7</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2009.html" title="November 2009">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2009.html" title="October 2009">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2009.html" title="September 2009">
+                <span class="label">6</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2009.html" title="August 2009">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2009.html" title="July 2009">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2009.html" title="June 2009">
+                <span class="label">5</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2009.html" title="May 2009">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2009.html" title="February 2009">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajan_2009.html" title="January 2009">
+                <span class="label">5</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2008</li>
+        <li>
+        <a href="../../../month%253Adec_2008.html" title="December 2008">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2008.html" title="November 2008">
+                <span class="label">11</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2008.html" title="August 2008">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2008.html" title="May 2008">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2008.html" title="April 2008">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2008.html" title="March 2008">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2008.html" title="February 2008">
+                <span class="label">7</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajan_2008.html" title="January 2008">
+                <span class="label">10</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2007</li>
+        <li>
+        <a href="../../../month%253Adec_2007.html" title="December 2007">
+                <span class="label">25</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2007.html" title="November 2007">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2007.html" title="October 2007">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2007.html" title="September 2007">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2007.html" title="June 2007">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2007.html" title="May 2007">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2007.html" title="February 2007">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajan_2007.html" title="January 2007">
+                <span class="label">7</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2006</li>
+        <li>
+        <a href="../../../month%253Adec_2006.html" title="December 2006">
+                <span class="label">5</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2006.html" title="November 2006">
+                <span class="label">14</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2006.html" title="October 2006">
+                <span class="label">9</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2006.html" title="September 2006">
+                <span class="label">7</span>
+                </a>
+    </li>
+</ul>
+</div>
+			</div>
+		</div>
+	
+                                    
+        </section>
+        
+                <footer id="footer">
+            <div class="totop">
+                <span><a href="from-zero-to-hello-world-in-15-minutes.html#" id="toTop"><i class="fa fa-arrow-up"></i></a></span>
+            </div>
+            <p>Powered by <a href="http://getgrav.org">Grav</a>.</p>
+            <p>
+                <a href="../../../blog.atom.html"><i class="fa fa-rss-square"></i> Atom 1.0</a> |
+                <a href="../../../blog.rss.html"><i class="fa fa-rss-square"></i> RSS</a> |
+                <a href="http://fbrnc.net/sitemap">Sitemap</a>
+            </p>
+        </footer>
+            </div>
+    <div class="sb-slidebar sb-left sb-width-thin">
+        <div id="panel">
+        
+<ul class="navigation">
+                                    <li class="active">
+                <a href="../../../index.html">
+                                        Blog
+                </a>
+            </li>
+                                <li class="">
+                <a href="../../../privacy-policy.html">
+                                        Privacy Policy
+                </a>
+            </li>
+                                <li class="">
+                <a href="../../../contact.html">
+                                        Contact
+                </a>
+            </li>
+                    </ul>
+
+        </div>
+    </div>
+            
+        <script>
+        $(function () {
+            $(document).ready(function() {
+              $.slidebars({
+                hideControlClasses: true,
+                scrollLock: true
+              });
+            });
+        });
+        </script>
+    </body>
+</html>
+<!-- Generated: 2016-07-24T10:09:21+02:00 -->

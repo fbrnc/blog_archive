@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="utf-8" />
+    <title>$block-&gt;setCacheLifetime(null); | Fabrizio Branca</title>
+    <meta name="generator" content="GravCMS" />
+<meta name="description" content="Web Development" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="icon" type="image/png" href="http://fbrnc.net/user/themes/antimatter/images/favicon.png" />
+    <link rel="canonical" href="cache-and-layout-xml-tricks.html" />
+
+                                                            
+                        <link href="../../../assets/69aec95887701d23e4d88f5cc08d450b.css@g-db0a965f.css" type="text/css" rel="stylesheet" />
+
+
+                                                                            <script src="../../../assets/0ce5b591987de495cd9ba62b91568c73.js@g-db0a965f" type="text/javascript" ></script>
+
+
+</head>
+<body id="top" class="">
+    <div id="sb-site">
+                <header id="header">
+
+            <div id="logo">
+                <h3><a href="../../../index.html"><span class="firstline">Fabrizio</span><span class="secondline">Branca
+            </div>
+            <div id="navbar">
+                                                
+<ul class="navigation">
+                                    <li class="active">
+                <a href="../../../index.html">
+                                        Blog
+                </a>
+            </li>
+                                <li class="">
+                <a href="../../../privacy-policy.html">
+                                        Privacy Policy
+                </a>
+            </li>
+                                <li class="">
+                <a href="../../../contact.html">
+                                        Contact
+                </a>
+            </li>
+                    </ul>
+
+                                <span class="panel-activation sb-toggle-left navbar-left menu-btn fa fa-bars"></span>
+            </div>
+
+        </header>
+        
+        
+                <section id="body" class="">
+            					
+<div id="breadcrumbs" itemscope itemtype="http://data-vocabulary.org/Breadcrumb">
+                            <a href="../../../index.html" itemprop="url"><span itemprop="title">Blog</span></a>
+            <i class="fa fa-angle-right"></i>
+                                <a href="http://fbrnc.net/blog/2015" itemprop="url"><span itemprop="title">2015</span></a>
+            <i class="fa fa-angle-right"></i>
+                                <a href="http://fbrnc.net/blog/2015/06" itemprop="url"><span itemprop="title">06</span></a>
+            <i class="fa fa-angle-right"></i>
+                                                <span itemprop="title">$block->setCacheLifetime(null);</span>
+                        </div>
+				
+		<div class="blog-content-item grid pure-g-r">
+			<div id="item" class="block pure-u-2-3">
+ 			    <div class="list-item">
+
+    <div class="list-blog-header">
+        <span class="list-blog-date">
+            <span>11 Jun</span>
+            <em>2015</em>
+        </span>
+        <h2><a href="cache-and-layout-xml-tricks.html" class="post-title">$block->setCacheLifetime(null);</a></h2>
+                <span class="tags">
+                        <a href="../../../tag%253AMagento.html">Magento</a>
+                        <a href="../../../tag%253ACaching.html">Caching</a>
+                        <a href="../../../tag%253ATricks.html">Tricks</a>
+                    </span>
+                
+    </div>
+
+    <div class="list-blog-padding">
+            <p><p>Did you ever try to make a block that is cached by default <em>uncacheable</em>? Let's play a little bit with caches and layout xml and you might learn a trick or two along the way...</p>
+<p>First of all: Why would you want to make a block uncacheable?! - Just because you can :)
+And here's an example:</p>
+<p>Let's look at the footer block (<code>Mage_Page_Block_Html_Footer</code>) - one of the few blocks that are cached by default in Magento. Btw, you can use <a href="https://github.com/AOEpeople/Aoe_TemplateHints">Aoe_TemplateHints</a> for a nice graphical representation of what's cached and what's not:</p>
+<p><img src="http://fbrnc.net/images/5/e/a/a/e/5eaae2f787015747fc577a5679df3a1658617af4-footer.png" /></p>
+<p>Here's where the caching is configured:</p>
+<pre><code>class Mage_Page_Block_Html_Footer extends Mage_Core_Block_Template
+{
+
+    protected function _construct()
+    {
+        $this-&gt;addData(array('cache_lifetime' =&gt; false));
+        $this-&gt;addCacheTag(array(
+            Mage_Core_Model_Store::CACHE_TAG,
+            Mage_Cms_Model_Block::CACHE_TAG
+        ));
+    }
+
+    [...]
+}</code></pre>
+<p>Let's say you put something inside the footer that's customer specific (e.g. "products you might like"). Since the footer is cached everything that's inside that footer is implicitly caches (Aoe_TemplateHints shows this with a yellow border). So you wouldn't be able to have customer specific content unless</p>
+<ol>
+<li>don't nest that block inside the footer in the first place</li>
+<li>you "tell" the footer block about the different versions you want by adding the customer id to the cache key</li>
+<li>you disable caching for the footer block and cache the children individually.</li>
+</ol>
+<p>While 1.) and 2.) might be smarter let's proceed with option 3.) for now and try to make Magento not cache the footer block in the first place...</p>
+<h3>Block Caching 101</h3>
+<p>As you might know block caching in Magento is controlled via following methods (checkout <code>Mage_Core_Block_Abstract</code>) </p>
+<ul>
+<li><code>getCacheKey()</code> (by default generating a key using <code>getCacheKeyInfo()</code>)</li>
+<li><code>getCacheLifetime()</code></li>
+<li><code>getCacheTags()</code></li>
+</ul>
+<p>But it's really <code>getCacheLifetime()</code> that controls if a block is cached or not and if so how long it is cached.</p>
+<p>Here are the - not so intuitive - rules:</p>
+<table>
+<thead>
+<tr>
+<th>$x = $this-&gt;getCacheLifetime()</th>
+<th>What happens</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>null*</td>
+<td>no caching</td>
+</tr>
+<tr>
+<td>0 / false</td>
+<td>cache forever</td>
+</tr>
+<tr>
+<td>&gt; 0</td>
+<td>cache for $x seconds</td>
+</tr>
+</tbody>
+</table>
+<p>* don't confuse this with <code>Zend_Cache_Backend_Interface</code> where a lifetime of <code>null</code> actually means <em>forever</em> instead of <em>no caching</em>.</p>
+<h3>What's not working</h3>
+<p>While overriding the lifetime like this works perfectly fine (in this case the footer will be cached for a day instead of forever):</p>
+<pre><code>&lt;reference name="footer"&gt;
+    &lt;action method="setCacheLifetime"&gt;&lt;lifetime&gt;86400&lt;/lifetime&gt;&lt;/action&gt;
+&lt;/reference&gt;</code></pre>
+<p>adding <code>null</code> (or any other non-integerish value) <strong>does not work</strong>:</p>
+<pre><code>&lt;reference name="footer"&gt;
+    &lt;action method="setCacheLifetime"&gt;&lt;lifetime&gt;null&lt;/lifetime&gt;&lt;/action&gt;
+&lt;/reference&gt;</code></pre>
+<p>Technically it's up to the cache backend implementation, but most of the backends will interpret this as a lifetime of 0 and make the cache expire right away. Well, technically this is exactly what you want, but besides the fact that this is unreliable (since different cache backends might handle this differently) and exceptionally ugly you end up writing data into the cache (which might be slow) that is expired right away (which also will lead to cache fragmentation over time...) </p>
+<p>Leaving the parameter empty also does not work (since then for some reason a <code>Mage_Core_Model_Layout_Element</code> is passed as an argument resulting in the same undefined situation we had with strings)</p>
+<pre><code>&lt;reference name="footer"&gt;
+    &lt;action method="setCacheLifetime"&gt;&lt;lifetime&gt;&lt;/lifetime&gt;&lt;/action&gt;
+&lt;/reference&gt;</code></pre>
+<h3>Option 1: Rewrite</h3>
+<p>So how do we handle this problem? The obvious solution would be to rewrite the footer class overwriting the <code>_construct()</code> method to prevent the <code>cache_lifetime</code> to be set in the first place:</p>
+<pre><code>class MyModule_Page_Block_Html_Footer extends Mage_Page_Block_Html_Footer
+{
+
+    protected function _construct()
+    {
+        // skip setting the cache_filetime to prevent caching
+        // $this-&gt;addData(array('cache_lifetime' =&gt; false));
+        // $this-&gt;addCacheTag(array(
+        //     Mage_Core_Model_Store::CACHE_TAG,
+        //     Mage_Cms_Model_Block::CACHE_TAG
+        // ));
+    }
+
+    [...]
+}</code></pre>
+<p>Again, this works fine, but it just feels wrong to rewrite a class (with another almost empty class) to do this.</p>
+<h3>Option 2: Layout XML helper</h3>
+<p>Now, let's get to the more exciting stuff: Let's do this via layout xml, but since we already know that <code>&lt;action method="setCacheLifetime"&gt;&lt;lifetime&gt;null&lt;/lifetime&gt;&lt;/action&gt;</code> will result in the cache lifetime being a string <code>'null'</code> (instead of actually being <code>null</code>) how do we get the correct null value into the cache lifetime property?</p>
+<p>Let's use a simple helper:</p>
+<pre><code>class My_Module_Helper_Data extends Mage_Core_Helper_Abstract {
+
+    public function returnNull() 
+    {
+        return null;
+    } 
+}</code></pre>
+<p>And set the value in layout xml like this:</p>
+<pre><code>&lt;reference name="footer"&gt;
+    &lt;action method="setCacheLifetime"&gt;&lt;lifetime helper="mymodule/returnNull" /&gt;&lt;/action&gt;
+&lt;/reference&gt;</code></pre>
+<p>With this trick the helper is being called and returns a real <code>null</code> that is then being passed as an argument to <code>setCacheLifetime()</code>. This way we can bypass layout xml's restriction of not being able to express <code>null</code> values.</p>
+<p>Please note that the usage of helpers - while looking similar to Magento class names - work differently:
+The part before '/' is your module where the <strong>data helper</strong> is implied and the part after the '/' is the <strong>method name</strong> in that data helper! </p>
+<h3>Option 3: JSON</h3>
+<p>So this is the solution that got me most excited since I didn't know about this feature in layout xml before today and since this isn't used anywhere in the Magento code I bet this is news to many of you too:</p>
+<p><strong>You can tell Magento which arguments should be parsed as JSON!</strong></p>
+<p>This works similar to the "translate" feature you might have seen before where in this case the content of the <code>&lt;label&gt;</code> and the <code>&lt;title&gt;</code> argument are translated before being passed to the <code>addLink()</code> method:</p>
+<pre><code>&lt;action method="addLink" translate="label title" module="customer"&gt;
+    &lt;label&gt;Log In&lt;/label&gt;
+    &lt;url helper="customer/getLoginUrl"/&gt;
+    &lt;title&gt;Log In&lt;/title&gt;
+    &lt;prepare/&gt;
+    &lt;urlParams/&gt;
+    &lt;position&gt;1&lt;/position&gt;
+&lt;/action&gt;</code></pre>
+<p>Here's an example of the JSON feature:</p>
+<pre><code>&lt;action method="setComplexData" json="jsondata1 jsondata2"&gt;
+    &lt;jsondata1&gt;&lt;![CDATA[{"firstname": "John", "lastname": "Doe"}]]&gt;&lt;/jsondata1&gt;
+    &lt;regularvalue&gt;42&lt;/regularvalue&gt;
+    &lt;jsondata1&gt;&lt;![CDATA[{"zip": "94015", "state": "California"}]]&gt;&lt;/jsondata1&gt;
+&lt;/action&gt;</code></pre>
+<p>This will result in a call like this:</p>
+<pre><code>setComplexData(
+    object(stdClass)#1 (2) { 
+        ["firstname"]=&gt;string(4) "John"
+        ["lastname"]=&gt;string(3) "Doe"
+    },
+    '42',
+    object(stdClass)#1 (2) { 
+        ["zip"]=&gt;string(5) "94015"
+        ["state"]=&gt;string(10) "California"
+    }
+)</code></pre>
+<p>And luckily according to the <a href="http://json.org/">JSON specification</a> not only objects are allowed values, but also strings, <code>true</code>, <code>false</code> and: <code>null</code> (and <code>Mage::helper('core')-&gt;jsonDecode()</code> does respect that)!</p>
+<p>So this is why it works perfectly fine when you're trying to set a <code>null</code> value (or a real boolean <code>false</code>) to a method via layout xml:</p>
+<pre><code>&lt;action method="setCacheLifetime" json="jsondata"&gt;
+    &lt;jsondata&gt;null&lt;/jsondata&gt;
+&lt;/action&gt;</code></pre>
+<p>Find out more about this feature by looking at <code>Mage_Core_Model_Layout-&gt;_generateAction()</code>.</p>
+<h3>Option 4: Trivial solution</h3>
+<p>Ok, if you're still reading, here's the last, and probably most trivial option. And of course by far the most boring one:</p>
+<pre><code>&lt;reference name="footer"&gt;
+    &lt;action method="setCacheLifetime"&gt;&lt;/action&gt;
+&lt;/reference&gt;</code></pre>
+<p>(Note that there's no argument tag at all)</p>
+<p>This works because conveniently <code>Varien_Object-&gt;__call()</code> takes care of missing arguments and replaces them with <code>null</code> which again luckily is exactly what we need here:</p>
+<pre><code>$result = $this-&gt;setData($key, isset($args[0]) ? $args[0] : null);</code></pre></p>
+
+        <div class="share">
+            <span>Share via: </span>
+            <ul>
+                <li><a target="_blank" href="https://twitter.com/home?status=%24block-%3EsetCacheLifetime%28null%29%3B%20http%3A%2F%2Ffbrnc.net%2Fblog%2F2015%2F06%2Fcache-and-layout-xml-tricks%20%2Fvia%20%40fbrnc">Twitter</a></li>
+                <li><a target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=http%3A%2F%2Ffbrnc.net%2Fblog%2F2015%2F06%2Fcache-and-layout-xml-tricks">Facebook</a></li>
+                <li><a target="_blank" href="https://plus.google.com/share?url=http%3A%2F%2Ffbrnc.net%2Fblog%2F2015%2F06%2Fcache-and-layout-xml-tricks">Google+</a></li>
+                <li><a target="_blank" href="mailto:?subject=Reading Recommendation&amp;body=Check out this article: $block->setCacheLifetime(null); http%3A%2F%2Ffbrnc.net%2Fblog%2F2015%2F06%2Fcache-and-layout-xml-tricks by Fabrizio Branca .">Mail</a></li>
+            </ul>
+        </div>
+
+        <h4>Comments</h4>
+        <div class="enable_comments_notice">
+            <p>This website uses <a href="https://disqus.com">disqus</a> for the commenting functionality. In order to protect your privacy comments are <em>disabled by default</em>.</p>
+            <a id="enable_comments" href="cache-and-layout-xml-tricks.html#">Enable Comments</a>
+        </div>
+        <div id="disqus_thread"></div>
+        <script type="text/javascript">
+            var disqus_shortname = 'fbrnc';
+                    </script>
+
+    
+    </div>
+
+</div>
+			</div>
+			<div id="sidebar" class="block size-1-3 pure-u-1-3">
+				<div class="sidebar-content profile">
+    <div class="profile-image">
+        <img src="../../../user/themes/antimatter/images/fabrizio_polaroid.png" alt="Fabrizio Branca"/>
+    </div>
+    <div class="profile-content">
+        <p><strong>Hi, I'm Fabrizio!</strong></p>
+        <p>I'm a web developer from San Francisco, CA and I work for <a href="http://www.aoe.com">AOE</a>.</p>
+        <p>Follow me on <a href="https://twitter.com/fbrnc">Twitter</a> or check out my stuff on <a href="https://github.com/fbrnc">GitHub</a>.</p>
+            </div>
+</div>
+<div class="sidebar-content sidebar-certifications">
+    <h4>Certifications</h4>
+    <ul>
+        <li>
+            <img src="../../../user/themes/antimatter/images/cert/Solutions-Architect-Associate.png" alt="AWS Certified Solutions Architect - Associate"/>
+        </li>
+        <li>
+            <img src="../../../user/themes/antimatter/images/cert/Developer-Associate.png" alt="AWS Certified Developer - Associate"/>
+        </li>
+        <li>
+            <img src="../../../user/themes/antimatter/images/cert/SysOps-Administrator-Associate.png" alt="AWS Certified SysOps Administrator - Associate"/>
+        </li>
+        <li>
+            <a href="https://magento.com/blog/magento-news/meet-2016-magento-masters-mentors">
+                <img src="../../../user/themes/antimatter/images/cert/magento_master_2016.png" alt="Magento Masters 2016"/>
+            </a>
+        </li>
+        <li>
+            <a href="http://www.magentocommerce.com/certification/directory/dev/65753/">
+                <img src="../../../user/themes/antimatter/images/cert/magento_certified_developer_plus.png" alt="Magento Certified Developer Plus"/>
+            </a>
+        </li>
+        <li>
+            <a href="http://www.magentocommerce.com/certification/directory/dev/65753/">
+                <img src="../../../user/themes/antimatter/images/cert/frontend_developer.png" alt="Magento Certified Frontend Developer"/>
+            </a>
+        </li>
+        <li>
+            <a href="http://typo3.org/certification/about-the-certification/certified-typo3-cms-integrator-listing/show/branca-fabrizio/">
+                <img src="../../../user/themes/antimatter/images/cert/TYPO3-Certified-Integrator-black-140.png" alt="TYPO3 Certified Integrator"/>
+            </a>
+        </li>
+        <li>
+            <a href="http://www.zend.com/en/services/certification/zend-certified-engineer-directory#ClientCandidateID=ZEND009995&cid=0">
+                <img src="../../../user/themes/antimatter/images/cert/php5_zce_logo_new.gif" alt="Zend Certified Engineer"/>
+            </a>
+        </li>
+    </ul>
+</div>
+<div class="sidebar-content sidebar-tags">
+    <h4>Popular Tags</h4>
+    
+<span class="tags">
+                    <a class="" href="../../../tag%253AGallery.html">Gallery</a>
+                    <a class="" href="../../../tag%253AMagento.html">Magento</a>
+                    <a class="" href="../../../tag%253ADevelopment.html">Development</a>
+                    <a class="" href="../../../tag%253ATYPO3.html">TYPO3</a>
+                    <a class="" href="../../../tag%253APhotography.html">Photography</a>
+                    <a class="" href="../../../tag%253ASonstiges.html">Sonstiges</a>
+                    <a class="" href="../../../tag%253A30&#32;day&#32;photo&#32;challenge.html">30 day photo challenge</a>
+                    <a class="" href="../../../tag%253APfadfinder.html">Pfadfinder</a>
+                    <a class="" href="../../../tag%253ACaching.html">Caching</a>
+                    <a class="" href="../../../tag%253AAWS.html">AWS</a>
+                    <a class="" href="http://fbrnc.net/tag:Flash/Actionscript">Flash/Actionscript</a>
+                    <a class="" href="../../../tag%253APortfolio.html">Portfolio</a>
+                    <a class="" href="../../../tag%253ACloudFormation.html">CloudFormation</a>
+                    <a class="" href="../../../tag%253AVarnish.html">Varnish</a>
+                    <a class="" href="../../../tag%253ALambda.html">Lambda</a>
+                    <a class="" href="../../../tag%253AHome.html">Home</a>
+                    <a class="" href="../../../tag%253ABücher.html">Bücher</a>
+                    <a class="" href="../../../tag%253APresentation.html">Presentation</a>
+                    <a class="" href="../../../tag%253ADesign.html">Design</a>
+                    <a class="" href="../../../tag%253AOpen&#32;Source.html">Open Source</a>
+                    <a class="" href="../../../tag%253AStudium.html">Studium</a>
+                    <a class="" href="../../../tag%253ADeployment.html">Deployment</a>
+                    <a class="" href="../../../tag%253AOpsWorks.html">OpsWorks</a>
+                    <a class="" href="../../../tag%253AMeetup.html">Meetup</a>
+                    <a class="" href="../../../tag%253AKISS.html">KISS</a>
+                    <a class="" href="../../../tag%253ASNS.html">SNS</a>
+                    <a class="" href="../../../tag%253AMicroservices.html">Microservices</a>
+                    <a class="" href="../../../tag%253AArchitecture.html">Architecture</a>
+                    <a class="" href="../../../tag%253AKinesis.html">Kinesis</a>
+                    <a class="" href="../../../tag%253ASQS.html">SQS</a>
+                    <a class="" href="../../../tag%253AWorkflow.html">Workflow</a>
+                    <a class="" href="../../../tag%253AJMeter.html">JMeter</a>
+                    <a class="" href="../../../tag%253AGrav.html">Grav</a>
+                    <a class="" href="../../../tag%253AInfrastructure&#32;as&#32;Code.html">Infrastructure as Code</a>
+                    <a class="" href="../../../tag%253ADevOps.html">DevOps</a>
+                    <a class="" href="../../../tag%253AVideos.html">Videos</a>
+                    <a class="" href="../../../tag%253ALightroom.html">Lightroom</a>
+                    <a class="" href="../../../tag%253AScaling.html">Scaling</a>
+                    <a class="" href="../../../tag%253ATricks.html">Tricks</a>
+                    <a class="" href="../../../tag%253AMPMD.html">MPMD</a>
+                    <a class="" href="../../../tag%253ACache.html">Cache</a>
+                    <a class="" href="../../../tag%253ACMS.html">CMS</a>
+                    <a class="" href="../../../tag%253APerformance.html">Performance</a>
+                    <a class="" href="../../../tag%253AGit.html">Git</a>
+    </span>
+</div>
+<div class="sidebar-content sidebar-archives">
+    <h4>Archives</h4>
+	<ul class="archives">
+
+
+                    </ul><ul class="archives">
+        <li class="caption">2016</li>
+        <li>
+        <a href="../../../month%253Amay_2016.html" title="May 2016">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2016.html" title="March 2016">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajan_2016.html" title="January 2016">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2015</li>
+        <li>
+        <a href="../../../month%253Aoct_2015.html" title="October 2015">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2015.html" title="June 2015">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2015.html" title="April 2015">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2014</li>
+        <li>
+        <a href="../../../month%253Adec_2014.html" title="December 2014">
+                <span class="label">5</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2014.html" title="November 2014">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2014.html" title="May 2014">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2014.html" title="March 2014">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2014.html" title="February 2014">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2013</li>
+        <li>
+        <a href="../../../month%253Adec_2013.html" title="December 2013">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2013.html" title="August 2013">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2013.html" title="July 2013">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2013.html" title="May 2013">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2013.html" title="April 2013">
+                <span class="label">10</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2013.html" title="March 2013">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2013.html" title="February 2013">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2012</li>
+        <li>
+        <a href="../../../month%253Adec_2012.html" title="December 2012">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2012.html" title="November 2012">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2012.html" title="October 2012">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2012.html" title="September 2012">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2012.html" title="August 2012">
+                <span class="label">7</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2012.html" title="July 2012">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2012.html" title="June 2012">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2012.html" title="May 2012">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2012.html" title="April 2012">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2012.html" title="March 2012">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2012.html" title="February 2012">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2011</li>
+        <li>
+        <a href="../../../month%253Adec_2011.html" title="December 2011">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2011.html" title="November 2011">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2011.html" title="October 2011">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2011.html" title="September 2011">
+                <span class="label">17</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2011.html" title="August 2011">
+                <span class="label">26</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2011.html" title="July 2011">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2011.html" title="June 2011">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2011.html" title="May 2011">
+                <span class="label">9</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2011.html" title="April 2011">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2011.html" title="March 2011">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2011.html" title="February 2011">
+                <span class="label">9</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2010</li>
+        <li>
+        <a href="../../../month%253Adec_2010.html" title="December 2010">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2010.html" title="October 2010">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2010.html" title="August 2010">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2010.html" title="July 2010">
+                <span class="label">6</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2010.html" title="June 2010">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2010.html" title="April 2010">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2010.html" title="March 2010">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2010.html" title="February 2010">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2009</li>
+        <li>
+        <a href="../../../month%253Adec_2009.html" title="December 2009">
+                <span class="label">7</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2009.html" title="November 2009">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2009.html" title="October 2009">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2009.html" title="September 2009">
+                <span class="label">6</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2009.html" title="August 2009">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2009.html" title="July 2009">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2009.html" title="June 2009">
+                <span class="label">5</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2009.html" title="May 2009">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2009.html" title="February 2009">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajan_2009.html" title="January 2009">
+                <span class="label">5</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2008</li>
+        <li>
+        <a href="../../../month%253Adec_2008.html" title="December 2008">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2008.html" title="November 2008">
+                <span class="label">11</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2008.html" title="August 2008">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2008.html" title="May 2008">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2008.html" title="April 2008">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2008.html" title="March 2008">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2008.html" title="February 2008">
+                <span class="label">7</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajan_2008.html" title="January 2008">
+                <span class="label">10</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2007</li>
+        <li>
+        <a href="../../../month%253Adec_2007.html" title="December 2007">
+                <span class="label">25</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2007.html" title="November 2007">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2007.html" title="October 2007">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2007.html" title="September 2007">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2007.html" title="June 2007">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2007.html" title="May 2007">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2007.html" title="February 2007">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajan_2007.html" title="January 2007">
+                <span class="label">7</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2006</li>
+        <li>
+        <a href="../../../month%253Adec_2006.html" title="December 2006">
+                <span class="label">5</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2006.html" title="November 2006">
+                <span class="label">14</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2006.html" title="October 2006">
+                <span class="label">9</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2006.html" title="September 2006">
+                <span class="label">7</span>
+                </a>
+    </li>
+</ul>
+</div>
+			</div>
+		</div>
+	
+                                    
+        </section>
+        
+                <footer id="footer">
+            <div class="totop">
+                <span><a href="cache-and-layout-xml-tricks.html#" id="toTop"><i class="fa fa-arrow-up"></i></a></span>
+            </div>
+            <p>Powered by <a href="http://getgrav.org">Grav</a>.</p>
+            <p>
+                <a href="../../../blog.atom.html"><i class="fa fa-rss-square"></i> Atom 1.0</a> |
+                <a href="../../../blog.rss.html"><i class="fa fa-rss-square"></i> RSS</a> |
+                <a href="http://fbrnc.net/sitemap">Sitemap</a>
+            </p>
+        </footer>
+            </div>
+    <div class="sb-slidebar sb-left sb-width-thin">
+        <div id="panel">
+        
+<ul class="navigation">
+                                    <li class="active">
+                <a href="../../../index.html">
+                                        Blog
+                </a>
+            </li>
+                                <li class="">
+                <a href="../../../privacy-policy.html">
+                                        Privacy Policy
+                </a>
+            </li>
+                                <li class="">
+                <a href="../../../contact.html">
+                                        Contact
+                </a>
+            </li>
+                    </ul>
+
+        </div>
+    </div>
+            
+        <script>
+        $(function () {
+            $(document).ready(function() {
+              $.slidebars({
+                hideControlClasses: true,
+                scrollLock: true
+              });
+            });
+        });
+        </script>
+    </body>
+</html>
+<!-- Generated: 2016-07-24T07:24:51+02:00 -->

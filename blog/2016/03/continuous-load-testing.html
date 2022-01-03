@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="utf-8" />
+    <title>Continuous Load Testing and Monitoring | Fabrizio Branca</title>
+    <meta name="generator" content="GravCMS" />
+<meta name="description" content="Web Development" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="icon" type="image/png" href="http://fbrnc.net/user/themes/antimatter/images/favicon.png" />
+    <link rel="canonical" href="continuous-load-testing.html" />
+
+                                                            
+                        <link href="../../../assets/69aec95887701d23e4d88f5cc08d450b.css@g-db0a965f.css" type="text/css" rel="stylesheet" />
+
+
+                                                                            <script src="../../../assets/0ce5b591987de495cd9ba62b91568c73.js@g-db0a965f" type="text/javascript" ></script>
+
+
+</head>
+<body id="top" class="">
+    <div id="sb-site">
+                <header id="header">
+
+            <div id="logo">
+                <h3><a href="../../../index.html"><span class="firstline">Fabrizio</span><span class="secondline">Branca
+            </div>
+            <div id="navbar">
+                                                
+<ul class="navigation">
+                                    <li class="active">
+                <a href="../../../index.html">
+                                        Blog
+                </a>
+            </li>
+                                <li class="">
+                <a href="../../../privacy-policy.html">
+                                        Privacy Policy
+                </a>
+            </li>
+                                <li class="">
+                <a href="../../../contact.html">
+                                        Contact
+                </a>
+            </li>
+                    </ul>
+
+                                <span class="panel-activation sb-toggle-left navbar-left menu-btn fa fa-bars"></span>
+            </div>
+
+        </header>
+        
+        
+                <section id="body" class="">
+            					
+<div id="breadcrumbs" itemscope itemtype="http://data-vocabulary.org/Breadcrumb">
+                            <a href="../../../index.html" itemprop="url"><span itemprop="title">Blog</span></a>
+            <i class="fa fa-angle-right"></i>
+                                <a href="http://fbrnc.net/blog/2016" itemprop="url"><span itemprop="title">2016</span></a>
+            <i class="fa fa-angle-right"></i>
+                                <a href="http://fbrnc.net/blog/2016/03" itemprop="url"><span itemprop="title">03</span></a>
+            <i class="fa fa-angle-right"></i>
+                                                <span itemprop="title">Continuous Load Testing and Monitoring</span>
+                        </div>
+				
+		<div class="blog-content-item grid pure-g-r">
+			<div id="item" class="block pure-u-2-3">
+ 			    <div class="list-item">
+
+    <div class="list-blog-header">
+        <span class="list-blog-date">
+            <span>03 Mar</span>
+            <em>2016</em>
+        </span>
+        <h2><a href="continuous-load-testing.html" class="post-title">Continuous Load Testing and Monitoring</a></h2>
+                <span class="tags">
+                        <a href="../../../tag%253AAWS.html">AWS</a>
+                        <a href="../../../tag%253ACloudFormation.html">CloudFormation</a>
+                        <a href="../../../tag%253AJMeter.html">JMeter</a>
+                        <a href="../../../tag%253ALambda.html">Lambda</a>
+                    </span>
+                
+    </div>
+
+    <div class="list-blog-padding">
+            <p>
+<p><a rel="lightbox" data-width="1024" data-height="768" href="../../../images/1/8/7/c/4/187c4bffb445d83724d8be3c7360a99883c0731e-01cloudwatch.png"><img src="../../../images/1/2/4/1/6/124165079b019ed1a96340a4e82a9522fe0cfb3e-01cloudwatch.png" /></a></p>
+<h3>Why?</h3>
+<p>This looks like a lot of stuff, so why are we doing all this? The key motivation is to bring metrics together from various sources and look at them side by side so we can correlate the data and understand cause and effect.
+The various data sources of interest are:</p>
+<ul>
+<li><strong>Infrastructure</strong> metrics (CPU, Network IO,...)</li>
+<li><strong>Business</strong> metrics (Sign ups, logins, placed orders,...)</li>
+<li><strong>Events</strong> (deployments, auto-scaling activity,...)</li>
+<li><strong>Test</strong> metrics (response times, error rates,...)</li>
+</ul>
+<p>This setup can be used </p>
+<ul>
+<li>as a <strong>monitoring solution</strong> on your production system for your real traffic,</li>
+<li>while running <strong>manual "experiments"</strong> tweaking various parts of your infrastructure trying to optimize your setup, and</li>
+<li>for <strong>continuous load testing</strong> as part of your continuous integration setup in order to detect if a new build introduces new problems compared to previous ones.</li>
+</ul>
+<h3>Process (How?)</h3>
+<p>In case this is not your production monitoring setup, but you're planning on detecting bottlenecks via artificially generated traffic make sure you restore a well-defined state (that ideally matches your production environment as closely as possible - not only infrastructure-wise but also include all your data).
+The process of running a stress test "experiment" should include a fully automated setup of your test environment. After your test is done the environment can be shut down again. If you have everything automated up to the point where no manual interaction is required that should be an easy thing to do:  </p>
+<p><a rel="lightbox" data-width="1024" data-height="768" href="../../../images/b/1/0/5/8/b105867b185e66d293742019686d9850c4852269-jmeter.png"><img src="../../../images/b/4/c/b/3/b4cb342cf6a84ed4dc1003c32d146032545541be-jmeter.png" /></a></p>
+<h3>AWS Metrics &#10142; CloudWatch</h3>
+<p>This is the simplest part: AWS is already collecting a lot of interesting metrics for the various services. Here are some of the namespaces and metrics we typically look at:</p>
+<ul>
+<li><strong>AWS/EC2</strong>: CPUUtilization, NetworkIn</li>
+<li><strong>AWS/ELB</strong>: HealthyHostCount, UnHealthyHostCount, RequestCount, HTTPCode<em>Backend</em>*</li>
+<li><strong>AWS/ElastiCache</strong>:  CacheMisses, CacheHits, CPUUtilization, CurrItems, CurrConnections</li>
+<li><strong>AWS/RDS</strong>: DatabaseConnections, CPUUtilization, SwapUsage, {Write|Read}{IOPS|Latency|Throughput}        </li>
+</ul>
+<h3>Additional custom EC2 Metrics &#10142; CloudWatch</h3>
+<p>But there's a number of important metrics that AWS does not provide. <code>aws-mon.sh</code> is a simple bash script designed to be called via cron that collects some more metrics and pushes them to CloudWatch as custom metrics (using the <code>System/Detail/Linux</code> namespace by default):</p>
+<ul>
+<li>load average</li>
+<li>interrupt</li>
+<li>context switch</li>
+<li>cpu (user/system/idle/wait/steal)</li>
+<li>memory</li>
+<li>swap</li>
+<li>disk</li>
+</ul>
+<p>I recommend using the <a href="https://github.com/ikeisuke/aws-mon-linux/tree/development">development branch of ikeisuke's fork</a> since it allows passing custom "group dimensions" allowing you to aggregate metrics on an auto-scaling group level the same way CloudWatch does with the default EC2 metrics. Also it will batch-submit all metrics instead of submitting all metrics individually to CloudWatch.</p>
+<pre><code>INSTANCE_ID=$(ec2metadata --instance-id)
+EC2_AZ=$(ec2metadata --availability-zone)
+EC2_REGION=${EC2_AZ/%?/}
+ASG_NAME=$(aws --output text --region "${EC2_REGION}" ec2 describe-tags --filters "Name=resource-id,Values=${INSTANCE_ID}" "Name=key,Values=aws:autoscaling:groupName" --query "Tags[0].Value")
+
+line="* * * * * root /bin/bash ${BASEPATH}/lib/monitoring/aws-mon.sh --all-items --bulk-post --grouping-dimension AutoScalingGroupName=${ASG_NAME}"
+
+echo "$line" &gt;&gt; /etc/crontab</code></pre>
+<h3>App metrics &#10142; CloudWatch</h3>
+<p>Besides infrastructure metrics there's also a lot of things going on in your application that you might want to correlate to traffic, performance and other events. In case of an online store interesting metrics include:</p>
+<ul>
+<li>logins, signups</li>
+<li>placing items into your cart</li>
+<li>submitting orders</li>
+<li>average number of items in cart</li>
+<li>average cart value </li>
+<li>...</li>
+</ul>
+<p>For Magento I've kickstarted a <a href="https://github.com/AOEpeople/Aoe_Metrics">Aoe_Metrics</a> module that will provide a simple skeleton making it easy to aggregate custom metrics in an event observer and let Aoe_Metrics take care of submitting them to CloudWatch. (Example: <a href="https://github.com/AOEpeople/Aoe_Metrics/blob/master/app/code/community/Aoe/Metrics/Model/Metric/OrderStateCount.php">OrderStateCount</a>)</p>
+<h3>Logs &#10142; CloudWatch Logs &#10142; CloudWatch Metrics</h3>
+<p>Another trivial part (since this is a mechanism AWS provides) is streaming logs files to CloudWatch. You need to <a href="http://docs.aws.amazon.com/AmazonCloudWatch/latest/DeveloperGuide/WhatIsCloudWatchLogs.html">install and configure the CloudWatch Logs Agent</a> that will take care of pushing all your log entries to CloudWatch logs in near real-time.</p>
+<p>From there you can define "<a href="http://docs.aws.amazon.com/AmazonCloudWatch/latest/DeveloperGuide/MonitoringLogData.html">filters</a>" to extract metric information from your log files (e.g. number of 4XX status codes in Apache log files) or you could <a href="http://docs.aws.amazon.com/AmazonCloudWatch/latest/DeveloperGuide/CWL_ES_Stream.html">stream your log files to ElasticSearch Service using AWS Lambda</a> and use that as a backend for a more powerful log file analysis tool.</p>
+<h3>Jenkins (Annotations) &#10142; ElasticSearch</h3>
+<p><a href="http://grafana.org/">Grafana</a> allows adding "annotations" to your graphs. These annotations show up as vertical red lines in all your graphs allowing you to add more information about events that happen.</p>
+<p>We submit information about deployments, stress tests start and stops,... via curl:</p>
+<pre><code>curl -XPOST "http://elasticsearch.example:9200/annotations/jenkins" \
+    -d "{ \"message\" : \"Deployment: magento-env-int-build${BUILD}\", \"timestamp\": \"$(date -u +'%Y-%m-%dT%H:%M:%SZ')\"}"</code></pre>
+<p><img src="../../../user/pages/01.blog/2016/03/01.continuous-load-testing/annotations.png" /></p>
+<h3>JMeter &#10142; ElasticSearch</h3>
+<p>So, now this is the interesting part: Hopefully you'll need more than a single load generator instance to produce the traffic to bring your instructure down :) You could run <a href="https://jmeter.apache.org/usermanual/jmeter_distributed_testing_step_by_step.pdf">a master JMeter instance with multiple slave instance</a>. In this case the master instance coordinates the test execution and aggregates all the test results.</p>
+<p>But in addition to this being unnecessary complex to setup I don't see any reason why the load generators need to know about each other.
+So we run multiple individual JMeter testcases in parallel. Each of them as a stand-alone test-run. On the downside you'll have to do some trivial math and multiply the number of instances with the number of threads yourself to get to the total number of threads.</p>
+<p>Using <a href="http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-waitcondition.html">CloudFormation wait-conditions</a> every server signals when it's done provisioning, downloaded the testcase from S3 and ready to start the test. Then it waits for the wait-condition to become true before it starts. This way we can synchronize the test execution across all instances independently from how long it took to provision them without coupling them:</p>
+<p><strong>wait_for_cloudformation_resource_status.sh</strong></p>
+<pre><code>#!/usr/bin/env bash
+
+# Usage:
+# timout &lt;secondsBeforeItTimesOut&gt; ./wait_for_cloudformation_resource_status.sh &lt;region&gt; &lt;stackName&gt; &lt;logicalResourceId&gt; [&lt;expectedStatus&gt;] [&lt;sleepBetweenPolls&gt;]
+
+REGION=$1
+STACK_NAME=$2
+LOGICAL_RESOURCE_ID=$3
+EXPECTED_STATUS=${4:-"CREATE_COMPLETE"}
+SLEEP_BETWEEN_POLLS=${5:-5}
+
+if [ -z "${REGION}" ] ; then echo "Region missing"; exit 1; fi
+if [ -z "${STACK_NAME}" ] ; then echo "Stack name missing"; exit 1; fi
+if [ -z "${LOGICAL_RESOURCE_ID}" ] ; then echo "Logical resource id missing"; exit 1; fi
+
+while true; do
+    CURRENT_STATUS=$(aws --output=text --region "${REGION}" cloudformation describe-stack-resource --stack-name ${STACK_NAME} --logical-resource-id ${LOGICAL_RESOURCE_ID} --query "StackResourceDetail.ResourceStatus");
+    echo "${CURRENT_STATUS}/${EXPECTED_STATUS}"
+    if [ "${CURRENT_STATUS}" = "${EXPECTED_STATUS}" ] ; then
+        break
+    fi
+    sleep "${SLEEP_BETWEEN_POLLS}"
+done</code></pre>
+<p>Synchronization:</p>
+<pre><code># Provision instance 
+# ...
+
+# Signal ready for testing
+/usr/local/bin/cfn-signal --exit-code $? "${READY_FOR_TESTING_WAIT_CONDITION_HANDLE}"
+
+# Wait for every instance being ready
+timeout 600 bash wait_for_cloudformation_resource_status.sh ${REGION} ${STACK_NAME} ReadyForTestingWaitCondition CREATE_COMPLETE 5 || error_exit 'Failed waiting for JMeter bees (timeout)'
+
+# Run test
+timeout "${TestDuration}" jmeter -n -t testcase.jmx -JBASE_URL=${BaseUrl} -JNUMBER_OF_THREADS=${ThreadsPerInstance}
+
+# Signal Testing Completed
+/usr/local/bin/cfn-signal --exit-code $? "${TESTING_COMPLETED_WAIT_CONDITION_HANDLE}"
+
+# Shut down (and termination)
+shutdown -h now</code></pre>
+<p>But how do we get all the test results? We could have every instance write local files (<code>jmeter -n -t testcase.jmx -l results.jtl -l testrun.log</code>) and upload those files back to the S3 bucket the testcase was download from at the end of the test. But this means that we can't watch what's happening until the test is over and if something goes wrong we loose these results. In addition to that we'll have to manually merge the results from all instance.</p>
+<p>Instead we want those results to be streamed to ElasticSearch in (near) real-time. This way we don't have to worry about the instance and can simply kill the process (e.g. with <code>timeout</code>) or shut down the instances when we want to interrupt the test run. Load generators truly become ephemeral "<a href="https://blog.engineyard.com/2014/pets-vs-cattle">cattle</a>" this way.</p>
+<p>Using a <a href="http://jmeter.apache.org/usermanual/component_reference.html#Backend_Listener">custom backend listener</a> you can collect the test results during the test run and process them in batches.</p>
+<p>We started with the <a href="https://github.com/zumo64/ELK_POC/blob/master/jmeter/ElasticSearchBackendListenerClient.java">ElasticSearchBackendListenerClient custom backend listener</a> until we found out that AWS' ElasticSearch Service currently only allows access via the REST API (and not via the Java API on Port 9300 this backend listener was using).
+So we created our own 'ElasticSearch<strong>RestClient</strong>BackendListener' that uses the regular REST API (will be published soon).
+(Later we found out that we wanted to run Kibana 4.3 that requires ElasticSearch 2.1, which isn't what ElasticSearch Service is currently running, so we provisioned our own ElasticSearch server with Kibana, where we could have used the ElasticSearchBackendListenerClient that we found in the begninning. A couple more days later we found out we like Grafana a lot more than Kibana - at least for the dashboards and graphs. Grafana works well with ElasticSearch 1.x and 2.x, so we're ready to switch back to ElasticSearch Service now, where we don't have another option than using the REST API and we'll need to use our RestClient listener, but we'll not have to deal with running a ElasticSearch cluster ourselves).</p>
+<h3>CloudWatch &#10142; AWS Lambda &#10142; ElasticSearch</h3>
+<p>Finding the right resources in CloudWatch is a challenge:</p>
+<p><img src="../../../user/pages/01.blog/2016/03/01.continuous-load-testing/metrics.png" /></p>
+<p>And this is even more difficult if you constantly launch new resources (load balancers, auto-scaling groups, EC2 instances,...) in an immutable setup. Sadly CloudWatch doesn't allow you select metrics by a resources' tags.
+What we're trying to do is to monitor a <em>moving target</em> here. New resources will come and go with every deployment. Building a CloudWatch dashboard doesn't work and even with dynamic ElasticSearch queries and Kibana you won't be able to select the relevant resources based on tags since this information is not present in CloudWatch.</p>
+<p>This is where AWS Lambda comes in handy. With a scheduled function (every 5 minutes) we can discover the resources for a given environment that are currently in use, by tag and/or naming conventions. Then we collect theses resources' metrics using the dimensions CloudWatch is expecting (e.g. AutoScalingGroupName,...) and push them to ElasticSearch in a single batch. This way we have a continuous stream of metrics that will dynamically gather data from the relevant resources.</p>
+<p>Here's a simplified(!) version of the Lambda function. (Find the full version <a href="https://gist.github.com/fbrnc/5739f8bec042ac3326ad.js">here</a>). Also, don't forget to define a role for Lambda that has access to all this information (you could use the <code>arn:aws:iam::aws:policy/ReadOnlyAccess</code> policy if you're lazy). </p>
+<pre><code>var AWS = require('aws-sdk');
+var cloudwatch = new AWS.CloudWatch({ region: 'us-east-1'});
+
+exports.handler = function (event, context) {
+
+    var ElasticSearchHost = 'elasticsearch.example:9200';
+    var Environment = 'int';
+    var EndTime = new Date;
+    var StartTime = new Date(EndTime - 15*60*1000);
+
+    var bulkData = {body:[]};
+
+    var findAutoScalingGroup = function(callback) {
+        var autoscaling = new AWS.AutoScaling({ region: 'us-east-1'});
+        autoscaling.describeAutoScalingGroups({}, function(err, data) {
+            if (err) {
+                callback(err, data);
+            } else {
+                var found = 0;
+                // find autoscaling group by tag
+                data.AutoScalingGroups.forEach(function (item) {
+                    var assocTags = convertToAssocTags(item.Tags);
+                    if (assocTags.Environment == Environment) {
+                        found++;
+                        callback(null, item.AutoScalingGroupName);
+                    }
+                });
+                if (!found) {
+                    callback('No autoscaling group found', null);
+                }
+            }
+        })
+    };
+
+    var sendToElasticSearch = function(bulkData) {
+        if (bulkData.body.length &gt; 0) {
+            console.log('Sending ' + (bulkData.body.length/2) + ' metrics to ElasticSearch:');
+            var elasticsearch = require('elasticsearch');
+            var elasticSearchClient = new elasticsearch.Client({ host: ElasticSearchHost });
+            elasticSearchClient.bulk(bulkData, function(err, data) {
+                if (err) {
+                    errorExit(err, context);
+                } else {
+                    context.succeed();
+                }
+            });
+        } else {
+            context.done();
+        }
+    };
+
+    var getMetricStatistics = function(Namespace, metric, dimensions) {
+        metric.MetricNames.forEach(function (MetricName) {
+            var params = {
+                Period: 60,
+                StartTime: StartTime,
+                EndTime: EndTime,
+                MetricName: MetricName,
+                Namespace: Namespace,
+                Statistics: ['SampleCount', 'Average', 'Sum', 'Minimum', 'Maximum'],
+                Dimensions: dimensions
+            };
+            console.log('Fetching ' + Namespace + ':' + MetricName + ' for ' + dimensions[0].Value);
+            cloudwatch.getMetricStatistics(params, function (err, data) {
+                if (err) {
+                    console.log(err, err.stack);
+                } else {
+                    data.Datapoints.forEach(function (datapoint) {
+                        datapoint.Namespace = Namespace;
+                        datapoint.MetricName = MetricName;
+                        datapoint.Dimension = dimensions[0];
+                        datapoint.Environment = Environment;
+
+                        // push instruction
+                        bulkData.body.push({index: {
+                            _index: 'cloudwatch',
+                            _type: Namespace + ':' + MetricName,
+                            _id: Math.floor(datapoint.Timestamp.getTime() / 1000)
+                        }});
+
+                        // push data
+                        bulkData.body.push(datapoint);
+                    });
+                    sendToElasticSearch(bulkData);
+                }
+            });
+        });
+    };
+
+    var convertToAssocTags = function (tags) {
+        var assocTags = {};
+        tags.forEach(function(tag) {
+            assocTags[tag.Key] = tag.Value;
+        });
+        return assocTags;
+    };
+
+    findAutoScalingGroup(function(err, AutoScalingGroupName) {
+        if (err) {
+            console.log(err, err.stack);
+        } else {
+            getMetricStatistics('AWS/EC2', 'CPUUtilization', [{Name: 'AutoScalingGroupName', Value: AutoScalingGroupName}]);
+        }
+    });
+
+};</code></pre>
+<h3>Grafana</h3>
+<p>While Kibana is a great tool I started falling in love with Grafana lately. I find it much more flexible and easier to setup. On top of that the graphs look prettier too:</p>
+<p><a rel="lightbox" data-width="1024" data-height="768" href="../../../images/0/5/d/0/0/05d00bc3fe00e6ebaf4aab6bffae7633634e9815-grafana.jpeg"><img src="../../../images/4/2/b/a/d/42bad34222d2178f6a65ffaf30ccffe8c5d1770d-grafana.jpeg" /></a></p>
+<p>Sadly Grafana doesn't come with a nice interface to browse the data and write ElasticSearch queries. That's why we keep Kibana around as "query editor" and "data browser" and then configure the graphs in Grafana.</p>
+<p>Grafana is not specific to ElasticSearch. In fact it was build for Graphite initially. You could even directly access CloudWatch as a data source (without the Lambda function pushing the metrics to ElasticSearch), but if your infrastructure is "too dynamic" (immutable) you'll probably have a hard time selecting the relevant resources. </p>
+<h3>Continuous Integration with Jenkins and CloudFormation</h3>
+<p>Everything starts with a build job in Jenkins. The artifact (a '.tar.gz' file or two) will be uploaded to an S3 bucket. From there we start a series of different tests. For the "static code analysis" we don't need a working environment. But after that we need one (in Magento even "Unit Tests" require a working Magento environment in most cases, which to some degree blurs the lines between unit and integration tests...).</p>
+<p>The deployment happens in a separate downstream Jenkins job. Our deployment strategy is completely driven by CloudFormation. Similar to using CloudFormation for the "process" of running a stress test as described earlier in this article, we're using CloudFormation not only to spin up all the required resources for this specific build, but we trigger Lambda backed custom resources to update Route53 record sets and delete old stacks. The entire deployment <strong>process</strong> is reflected in a stack deployment specific to the current build.</p>
+<p>In order to make it more convenient to manage CloudFormation templates including parameters, embedded (userdata) scripts and connect them with other stacks we created a the <a href="https://github.com/AOEpeople/StackFormation">StackFormation</a> tool. If you want to learn more about the deployment process specifically (and you're happen to be in the Bay Area) you should stop by <a href="http://www.meetup.com/AdvancedAWS/events/228901715/">my presentation at the AdvancedAWS meetup in March</a> (and/or a blog post on this might follow at some point...).</p>
+<p>Once the environment is up and running we can continue with our tests. The next step would be a series of infrastructure test (check out <a href="https://github.com/AOEpeople/AwsInspector">AwsInspector</a>), where we test everything infrastructure related by querying the AWS API, via (multiplexed) SSH connections, and via HTTP.</p>
+<p>Finally we launch the stress tests as described above in another Jenkins job. Again the long-running CloudFormation deployment is driving the stress test and StackFormation will even listen to you aborting the Jenkins Job (SIGTERM), will stop the stress test and destroy the test infrastructure if you want it to.</p></p>
+
+        <div class="share">
+            <span>Share via: </span>
+            <ul>
+                <li><a target="_blank" href="https://twitter.com/home?status=Continuous%20Load%20Testing%20and%20Monitoring%20http%3A%2F%2Ffbrnc.net%2Fblog%2F2016%2F03%2Fcontinuous-load-testing%20%2Fvia%20%40fbrnc">Twitter</a></li>
+                <li><a target="_blank" href="https://www.facebook.com/sharer/sharer.php?u=http%3A%2F%2Ffbrnc.net%2Fblog%2F2016%2F03%2Fcontinuous-load-testing">Facebook</a></li>
+                <li><a target="_blank" href="https://plus.google.com/share?url=http%3A%2F%2Ffbrnc.net%2Fblog%2F2016%2F03%2Fcontinuous-load-testing">Google+</a></li>
+                <li><a target="_blank" href="mailto:?subject=Reading Recommendation&amp;body=Check out this article: Continuous Load Testing and Monitoring http%3A%2F%2Ffbrnc.net%2Fblog%2F2016%2F03%2Fcontinuous-load-testing by Fabrizio Branca .">Mail</a></li>
+            </ul>
+        </div>
+
+        <h4>Comments</h4>
+        <div class="enable_comments_notice">
+            <p>This website uses <a href="https://disqus.com">disqus</a> for the commenting functionality. In order to protect your privacy comments are <em>disabled by default</em>.</p>
+            <a id="enable_comments" href="continuous-load-testing.html#">Enable Comments</a>
+        </div>
+        <div id="disqus_thread"></div>
+        <script type="text/javascript">
+            var disqus_shortname = 'fbrnc';
+                    </script>
+
+    
+    </div>
+
+</div>
+			</div>
+			<div id="sidebar" class="block size-1-3 pure-u-1-3">
+				<div class="sidebar-content profile">
+    <div class="profile-image">
+        <img src="../../../user/themes/antimatter/images/fabrizio_polaroid.png" alt="Fabrizio Branca"/>
+    </div>
+    <div class="profile-content">
+        <p><strong>Hi, I'm Fabrizio!</strong></p>
+        <p>I'm a web developer from San Francisco, CA and I work for <a href="http://www.aoe.com">AOE</a>.</p>
+        <p>Follow me on <a href="https://twitter.com/fbrnc">Twitter</a> or check out my stuff on <a href="https://github.com/fbrnc">GitHub</a>.</p>
+            </div>
+</div>
+<div class="sidebar-content sidebar-certifications">
+    <h4>Certifications</h4>
+    <ul>
+        <li>
+            <img src="../../../user/themes/antimatter/images/cert/Solutions-Architect-Associate.png" alt="AWS Certified Solutions Architect - Associate"/>
+        </li>
+        <li>
+            <img src="../../../user/themes/antimatter/images/cert/Developer-Associate.png" alt="AWS Certified Developer - Associate"/>
+        </li>
+        <li>
+            <img src="../../../user/themes/antimatter/images/cert/SysOps-Administrator-Associate.png" alt="AWS Certified SysOps Administrator - Associate"/>
+        </li>
+        <li>
+            <a href="https://magento.com/blog/magento-news/meet-2016-magento-masters-mentors">
+                <img src="../../../user/themes/antimatter/images/cert/magento_master_2016.png" alt="Magento Masters 2016"/>
+            </a>
+        </li>
+        <li>
+            <a href="http://www.magentocommerce.com/certification/directory/dev/65753/">
+                <img src="../../../user/themes/antimatter/images/cert/magento_certified_developer_plus.png" alt="Magento Certified Developer Plus"/>
+            </a>
+        </li>
+        <li>
+            <a href="http://www.magentocommerce.com/certification/directory/dev/65753/">
+                <img src="../../../user/themes/antimatter/images/cert/frontend_developer.png" alt="Magento Certified Frontend Developer"/>
+            </a>
+        </li>
+        <li>
+            <a href="http://typo3.org/certification/about-the-certification/certified-typo3-cms-integrator-listing/show/branca-fabrizio/">
+                <img src="../../../user/themes/antimatter/images/cert/TYPO3-Certified-Integrator-black-140.png" alt="TYPO3 Certified Integrator"/>
+            </a>
+        </li>
+        <li>
+            <a href="http://www.zend.com/en/services/certification/zend-certified-engineer-directory#ClientCandidateID=ZEND009995&cid=0">
+                <img src="../../../user/themes/antimatter/images/cert/php5_zce_logo_new.gif" alt="Zend Certified Engineer"/>
+            </a>
+        </li>
+    </ul>
+</div>
+<div class="sidebar-content sidebar-tags">
+    <h4>Popular Tags</h4>
+    
+<span class="tags">
+                    <a class="" href="../../../tag%253AGallery.html">Gallery</a>
+                    <a class="" href="../../../tag%253AMagento.html">Magento</a>
+                    <a class="" href="../../../tag%253ADevelopment.html">Development</a>
+                    <a class="" href="../../../tag%253ATYPO3.html">TYPO3</a>
+                    <a class="" href="../../../tag%253APhotography.html">Photography</a>
+                    <a class="" href="../../../tag%253ASonstiges.html">Sonstiges</a>
+                    <a class="" href="../../../tag%253A30&#32;day&#32;photo&#32;challenge.html">30 day photo challenge</a>
+                    <a class="" href="../../../tag%253APfadfinder.html">Pfadfinder</a>
+                    <a class="" href="../../../tag%253ACaching.html">Caching</a>
+                    <a class="" href="../../../tag%253AAWS.html">AWS</a>
+                    <a class="" href="http://fbrnc.net/tag:Flash/Actionscript">Flash/Actionscript</a>
+                    <a class="" href="../../../tag%253APortfolio.html">Portfolio</a>
+                    <a class="" href="../../../tag%253ACloudFormation.html">CloudFormation</a>
+                    <a class="" href="../../../tag%253AVarnish.html">Varnish</a>
+                    <a class="" href="../../../tag%253ALambda.html">Lambda</a>
+                    <a class="" href="../../../tag%253AHome.html">Home</a>
+                    <a class="" href="../../../tag%253ABücher.html">Bücher</a>
+                    <a class="" href="../../../tag%253APresentation.html">Presentation</a>
+                    <a class="" href="../../../tag%253ADesign.html">Design</a>
+                    <a class="" href="../../../tag%253AOpen&#32;Source.html">Open Source</a>
+                    <a class="" href="../../../tag%253AStudium.html">Studium</a>
+                    <a class="" href="../../../tag%253ADeployment.html">Deployment</a>
+                    <a class="" href="../../../tag%253AOpsWorks.html">OpsWorks</a>
+                    <a class="" href="../../../tag%253AMeetup.html">Meetup</a>
+                    <a class="" href="../../../tag%253AKISS.html">KISS</a>
+                    <a class="" href="../../../tag%253ASNS.html">SNS</a>
+                    <a class="" href="../../../tag%253AMicroservices.html">Microservices</a>
+                    <a class="" href="../../../tag%253AArchitecture.html">Architecture</a>
+                    <a class="" href="../../../tag%253AKinesis.html">Kinesis</a>
+                    <a class="" href="../../../tag%253ASQS.html">SQS</a>
+                    <a class="" href="../../../tag%253AWorkflow.html">Workflow</a>
+                    <a class="" href="../../../tag%253AJMeter.html">JMeter</a>
+                    <a class="" href="../../../tag%253AGrav.html">Grav</a>
+                    <a class="" href="../../../tag%253AInfrastructure&#32;as&#32;Code.html">Infrastructure as Code</a>
+                    <a class="" href="../../../tag%253ADevOps.html">DevOps</a>
+                    <a class="" href="../../../tag%253AVideos.html">Videos</a>
+                    <a class="" href="../../../tag%253ALightroom.html">Lightroom</a>
+                    <a class="" href="../../../tag%253AScaling.html">Scaling</a>
+                    <a class="" href="../../../tag%253ATricks.html">Tricks</a>
+                    <a class="" href="../../../tag%253AMPMD.html">MPMD</a>
+                    <a class="" href="../../../tag%253ACache.html">Cache</a>
+                    <a class="" href="../../../tag%253ACMS.html">CMS</a>
+                    <a class="" href="../../../tag%253APerformance.html">Performance</a>
+                    <a class="" href="../../../tag%253AGit.html">Git</a>
+    </span>
+</div>
+<div class="sidebar-content sidebar-archives">
+    <h4>Archives</h4>
+	<ul class="archives">
+
+
+                    </ul><ul class="archives">
+        <li class="caption">2016</li>
+        <li>
+        <a href="../../../month%253Amay_2016.html" title="May 2016">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2016.html" title="March 2016">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajan_2016.html" title="January 2016">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2015</li>
+        <li>
+        <a href="../../../month%253Aoct_2015.html" title="October 2015">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2015.html" title="June 2015">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2015.html" title="April 2015">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2014</li>
+        <li>
+        <a href="../../../month%253Adec_2014.html" title="December 2014">
+                <span class="label">5</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2014.html" title="November 2014">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2014.html" title="May 2014">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2014.html" title="March 2014">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2014.html" title="February 2014">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2013</li>
+        <li>
+        <a href="../../../month%253Adec_2013.html" title="December 2013">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2013.html" title="August 2013">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2013.html" title="July 2013">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2013.html" title="May 2013">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2013.html" title="April 2013">
+                <span class="label">10</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2013.html" title="March 2013">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2013.html" title="February 2013">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2012</li>
+        <li>
+        <a href="../../../month%253Adec_2012.html" title="December 2012">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2012.html" title="November 2012">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2012.html" title="October 2012">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2012.html" title="September 2012">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2012.html" title="August 2012">
+                <span class="label">7</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2012.html" title="July 2012">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2012.html" title="June 2012">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2012.html" title="May 2012">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2012.html" title="April 2012">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2012.html" title="March 2012">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2012.html" title="February 2012">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2011</li>
+        <li>
+        <a href="../../../month%253Adec_2011.html" title="December 2011">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2011.html" title="November 2011">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2011.html" title="October 2011">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2011.html" title="September 2011">
+                <span class="label">17</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2011.html" title="August 2011">
+                <span class="label">26</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2011.html" title="July 2011">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2011.html" title="June 2011">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2011.html" title="May 2011">
+                <span class="label">9</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2011.html" title="April 2011">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2011.html" title="March 2011">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2011.html" title="February 2011">
+                <span class="label">9</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2010</li>
+        <li>
+        <a href="../../../month%253Adec_2010.html" title="December 2010">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2010.html" title="October 2010">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2010.html" title="August 2010">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2010.html" title="July 2010">
+                <span class="label">6</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2010.html" title="June 2010">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2010.html" title="April 2010">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2010.html" title="March 2010">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2010.html" title="February 2010">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2009</li>
+        <li>
+        <a href="../../../month%253Adec_2009.html" title="December 2009">
+                <span class="label">7</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2009.html" title="November 2009">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2009.html" title="October 2009">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2009.html" title="September 2009">
+                <span class="label">6</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2009.html" title="August 2009">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajul_2009.html" title="July 2009">
+                <span class="label">3</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2009.html" title="June 2009">
+                <span class="label">5</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2009.html" title="May 2009">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2009.html" title="February 2009">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajan_2009.html" title="January 2009">
+                <span class="label">5</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2008</li>
+        <li>
+        <a href="../../../month%253Adec_2008.html" title="December 2008">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2008.html" title="November 2008">
+                <span class="label">11</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aaug_2008.html" title="August 2008">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2008.html" title="May 2008">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aapr_2008.html" title="April 2008">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amar_2008.html" title="March 2008">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2008.html" title="February 2008">
+                <span class="label">7</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajan_2008.html" title="January 2008">
+                <span class="label">10</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2007</li>
+        <li>
+        <a href="../../../month%253Adec_2007.html" title="December 2007">
+                <span class="label">25</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2007.html" title="November 2007">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2007.html" title="October 2007">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2007.html" title="September 2007">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajun_2007.html" title="June 2007">
+                <span class="label">4</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Amay_2007.html" title="May 2007">
+                <span class="label">1</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Afeb_2007.html" title="February 2007">
+                <span class="label">2</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Ajan_2007.html" title="January 2007">
+                <span class="label">7</span>
+                </a>
+    </li>
+
+                    </ul><ul class="archives">
+        <li class="caption">2006</li>
+        <li>
+        <a href="../../../month%253Adec_2006.html" title="December 2006">
+                <span class="label">5</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Anov_2006.html" title="November 2006">
+                <span class="label">14</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Aoct_2006.html" title="October 2006">
+                <span class="label">9</span>
+                </a>
+    </li>
+
+        <li>
+        <a href="../../../month%253Asep_2006.html" title="September 2006">
+                <span class="label">7</span>
+                </a>
+    </li>
+</ul>
+</div>
+			</div>
+		</div>
+	
+                                    
+        </section>
+        
+                <footer id="footer">
+            <div class="totop">
+                <span><a href="continuous-load-testing.html#" id="toTop"><i class="fa fa-arrow-up"></i></a></span>
+            </div>
+            <p>Powered by <a href="http://getgrav.org">Grav</a>.</p>
+            <p>
+                <a href="../../../blog.atom.html"><i class="fa fa-rss-square"></i> Atom 1.0</a> |
+                <a href="../../../blog.rss.html"><i class="fa fa-rss-square"></i> RSS</a> |
+                <a href="http://fbrnc.net/sitemap">Sitemap</a>
+            </p>
+        </footer>
+            </div>
+    <div class="sb-slidebar sb-left sb-width-thin">
+        <div id="panel">
+        
+<ul class="navigation">
+                                    <li class="active">
+                <a href="../../../index.html">
+                                        Blog
+                </a>
+            </li>
+                                <li class="">
+                <a href="../../../privacy-policy.html">
+                                        Privacy Policy
+                </a>
+            </li>
+                                <li class="">
+                <a href="../../../contact.html">
+                                        Contact
+                </a>
+            </li>
+                    </ul>
+
+        </div>
+    </div>
+            
+        <script>
+        $(function () {
+            $(document).ready(function() {
+              $.slidebars({
+                hideControlClasses: true,
+                scrollLock: true
+              });
+            });
+        });
+        </script>
+    </body>
+</html>
+<!-- Generated: 2016-07-24T07:41:19+02:00 -->
