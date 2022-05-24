@@ -7,14 +7,14 @@
     <meta name="generator" content="GravCMS" />
 <meta name="description" content="Web Development" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <link rel="icon" type="image/png" href="http://fbrnc.net/user/themes/antimatter/images/favicon.png" />
+    <link rel="icon" type="image/png" href="https://archive.fbrnc.net/user/themes/antimatter/images/favicon.png" />
     <link rel="canonical" href="blog/2011/05/make-your-magento-store-fly-using-varnish.html" />
 
                                                             
-                        <link href="https://fbrnc.net/assets/69aec95887701d23e4d88f5cc08d450b.css?g-db0a965f" type="text/css" rel="stylesheet" />
+                        <link href="https://archive.fbrnc.net/assets/69aec95887701d23e4d88f5cc08d450b.css?g-db0a965f" type="text/css" rel="stylesheet" />
 
 
-                                                                            <script src="https://fbrnc.net/assets/0ce5b591987de495cd9ba62b91568c73.js?g-db0a965f" type="text/javascript" ></script>
+                                                                            <script src="https://archive.fbrnc.net/assets/0ce5b591987de495cd9ba62b91568c73.js?g-db0a965f" type="text/javascript" ></script>
 
 
 </head>
@@ -23,23 +23,23 @@
                 <header id="header">
 
             <div id="logo">
-                <h3><a href="https://fbrnc.net/"><span class="firstline">Fabrizio</span><span class="secondline">Branca
+                <h3><a href="https://archive.fbrnc.net/"><span class="firstline">Fabrizio</span><span class="secondline">Branca
             </div>
             <div id="navbar">
                                                 
 <ul class="navigation">
                                     <li class="active">
-                <a href="https://fbrnc.net/">
+                <a href="https://archive.fbrnc.net/">
                                         Blog
                 </a>
             </li>
                                 <li class="">
-                <a href="https://fbrnc.net/privacy-policy">
+                <a href="https://archive.fbrnc.net/privacy-policy">
                                         Privacy Policy
                 </a>
             </li>
                                 <li class="">
-                <a href="https://fbrnc.net/contact">
+                <a href="https://archive.fbrnc.net/contact">
                                         Contact
                 </a>
             </li>
@@ -54,11 +54,11 @@
                 <section id="body" class="">
             					
 <div id="breadcrumbs" itemscope itemtype="http://data-vocabulary.org/Breadcrumb">
-                            <a href="https://fbrnc.net/" itemprop="url"><span itemprop="title">Blog</span></a>
+                            <a href="https://archive.fbrnc.net/" itemprop="url"><span itemprop="title">Blog</span></a>
             <i class="fa fa-angle-right"></i>
-                                <a href="https://fbrnc.net/blog/2011" itemprop="url"><span itemprop="title">2011</span></a>
+                                <a href="https://archive.fbrnc.net/blog/2011" itemprop="url"><span itemprop="title">2011</span></a>
             <i class="fa fa-angle-right"></i>
-                                <a href="https://fbrnc.net/blog/2011/05" itemprop="url"><span itemprop="title">05</span></a>
+                                <a href="https://archive.fbrnc.net/blog/2011/05" itemprop="url"><span itemprop="title">05</span></a>
             <i class="fa fa-angle-right"></i>
                                                 <span itemprop="title">Make your Magento Store fly using Varnish</span>
                         </div>
@@ -74,10 +74,10 @@
         </span>
         <h2><a href="make-your-magento-store-fly-using-varnish.html" class="post-title">Make your Magento Store fly using Varnish</a></h2>
                 <span class="tags">
-                        <a href="https://fbrnc.net/tag:Magento">Magento</a>
-                        <a href="https://fbrnc.net/tag:Development">Development</a>
-                        <a href="https://fbrnc.net/tag:Caching">Caching</a>
-                        <a href="https://fbrnc.net/tag:Varnish">Varnish</a>
+                        <a href="https://archive.fbrnc.net/tag:Magento">Magento</a>
+                        <a href="https://archive.fbrnc.net/tag:Development">Development</a>
+                        <a href="https://archive.fbrnc.net/tag:Caching">Caching</a>
+                        <a href="https://archive.fbrnc.net/tag:Varnish">Varnish</a>
                     </span>
                 
     </div>
@@ -89,7 +89,7 @@
 <h3>Analysis</h3>
 <p>When having a closer look to the pages that are delivered by Magento we can easily see that there is a huge percentage of pages that are almost the same for all users. </p>
 <p>So let's have a look at a product listing page and spot the areas that my contain some user specific information:</p>
-<p><img src="https://fbrnc.net/user/pages/01.blog/2011/05/make-your-magento-store-fly-using-varnish/dynamic_parts.png" /></p>
+<p><img src="https://archive.fbrnc.net/user/pages/01.blog/2011/05/make-your-magento-store-fly-using-varnish/dynamic_parts.png" /></p>
 <p>So the dynamic parts in this Magento Demo Store are </p>
 <ul>
 <li>the <strong>menu</strong> in the top left corner (the third menu item is showing how many cart items are in the cart),</li>
@@ -108,7 +108,7 @@
 <p>A rough estimation is that <strong>90%</strong> of all pages delivered from a Magento instance are being processed by one of those actions.</p>
 <h3>Solution</h3>
 <p>These pages are candidates for being cached by a strong cache mechanism allowing us to deliver these pages way much faster than if they had to be re-generated first or if Magento had to read them from an internal cache. </p>
-<p>We could also generate static html files for those pages and deliver them instead (actually this is what I'm doing with <a href="https://fbrnc.net/blog.html">this blog</a> using TYPO3 and the extension <a href="http://forge.typo3.org/projects/show/extension-nc_staticfilecache">nc_staticfilecache</a>) but we'll use <a href="http://www.varnish-cache.org/">Varnish</a> for this purpose which comes with some additional handy features and might be even faster then a common webserver delivering static html files.</p>
+<p>We could also generate static html files for those pages and deliver them instead (actually this is what I'm doing with <a href="https://archive.fbrnc.net/blog.html">this blog</a> using TYPO3 and the extension <a href="http://forge.typo3.org/projects/show/extension-nc_staticfilecache">nc_staticfilecache</a>) but we'll use <a href="http://www.varnish-cache.org/">Varnish</a> for this purpose which comes with some additional handy features and might be even faster then a common webserver delivering static html files.</p>
 <h3>Varnish</h3>
 <p>Varnish is</p>
 <ul>
@@ -122,9 +122,9 @@
 <p>(You might consider to put <a href="http://nginx.net/">ngnix</a> in front of Varnish to handle compression and encryption. With the upcoming Varnish 3 these issues might be handled directly from Varnish itself.) </p>
 <p>Varnish comes with an own configuration language "VCL" that will be translated into C code and then compiled. This makes Varnish extremely fast. </p>
 <p>With VCL you can define subroutines that are executed at some defined parts within the request/response process offering you different objects to realize your very custom behaviour.</p>
-<p><img src="https://fbrnc.net/user/pages/01.blog/2011/05/make-your-magento-store-fly-using-varnish/browser_varnish_magento.png" /></p>
+<p><img src="https://archive.fbrnc.net/user/pages/01.blog/2011/05/make-your-magento-store-fly-using-varnish/browser_varnish_magento.png" /></p>
 <p>Here is a simplyfied overwiew of the process and the subroutines. (Check the Varnish documentation for <a href="http://www.varnish-cache.org/trac/wiki/VCLExampleDefault">a detailed diagram</a>)</p>
-<p><img src="https://fbrnc.net/user/pages/01.blog/2011/05/make-your-magento-store-fly-using-varnish/Varnish_Request_Paths.png" /></p>
+<p><img src="https://archive.fbrnc.net/user/pages/01.blog/2011/05/make-your-magento-store-fly-using-varnish/Varnish_Request_Paths.png" /></p>
 <h3>How does it work?</h3>
 <p>My idea was to replace all dynamic parts of a page by static placeholders. </p>
 <pre><code>&lt;layout&gt;  
@@ -148,21 +148,21 @@
 <p>Aoe_Static also comes with a piece of JavaScript that looks for placeholder elements (wrapped in elements with the class "placeholder"), collects them and sends an <strong>AJAX request</strong> to a controller, that also comes with Aoe_Static. This controller renders all requested Blocks and returns them to the browser, where they will be inserted into their correct positions. </p>
 <p>Besides that additional information can be passed to the server like the id of the currently viewed product, that is needed for the "recently viewed product" page. </p>
 <p>And on the other hand the server can transfer additional user-specific content to the browser like the session id, that is stored in a cookie to maintain the session for future requests.</p>
-<p><img src="https://fbrnc.net/user/pages/01.blog/2011/05/make-your-magento-store-fly-using-varnish/request_cached.png" /></p>
+<p><img src="https://archive.fbrnc.net/user/pages/01.blog/2011/05/make-your-magento-store-fly-using-varnish/request_cached.png" /></p>
 <p>This is how a dynamic request will be processed. Note that most of the content (the static part) is already visible earlier (see gray bar). Delivering the static part is much faster than asking Magento, because in most cases it should come from Varnish's cache. And even the rendering of the dynamic parts should be faster, because Magento only needs to render these blocks, while ignoring the rest of the layout completely. </p>
 <h3>Uncached pages</h3>
 <p>There are still some page requests that deliver very user-specific content. The cart, the checkout process and "My Account" are some examples. All cases not explicitly defined as cacheable in the Aoe_Static extension (see System -&gt; Configuration -&gt; System -&gt; Varnish Configuration) Varnish will pass the request to Magento and will not cache any results. As I'm using a whitelist here your Magento Store should not break, even with some custom controllers. An uncached page request would look like this:</p>
-<p><img src="https://fbrnc.net/user/pages/01.blog/2011/05/make-your-magento-store-fly-using-varnish/request_uncached.png" /></p>
+<p><img src="https://archive.fbrnc.net/user/pages/01.blog/2011/05/make-your-magento-store-fly-using-varnish/request_uncached.png" /></p>
 <h3>Speed benchmarks</h3>
 <p>I did some speed benchmarks, basically the same way that the <a href="http://www.magespeedtest.com/">Magento Speed Test</a> does it: I've created a Google Sitemap, extracted the urls and tested the speed using Siege. And here are the impressive results:</p>
-<p><img src="https://fbrnc.net/user/pages/01.blog/2011/05/make-your-magento-store-fly-using-varnish/statistics.png" /></p>
+<p><img src="https://archive.fbrnc.net/user/pages/01.blog/2011/05/make-your-magento-store-fly-using-varnish/statistics.png" /></p>
 <p>I have to admit, tests like these create no really significant test result numbers. But still you can see the tendency. </p>
 <p>Siege tests only urls found in the sitemap. And all those urls are cacheable ones. Besides that I did a cache warming before running the test. So this test result show only cache hits in the "Magento with Varnish" testcase. But still: this is what you could have if your Varnish is configured correctly after some time. And: Search engines do not go through your checkout process or log into to a customer account and - you have to admit - a big number of real users won't do that neither. </p>
 <p>So: Most of your visitors will see most (or even all) pages 200 times fast with Varnish!</p>
 <p>Have a look at Firebug and compare times for a page delivered by <strong>Varnish's Cache (16ms)</strong> and for a page delivered by <strong>Magento's Cache (776ms)</strong>. Even the fastest fullpage cache solution realized within Magento won't be able the bootstrap Magento, pick to correct page from its cache and deliver it to the browser in less than 16 ms!</p>
 <ul>
-<li><img src="https://fbrnc.net/user/pages/01.blog/2011/05/make-your-magento-store-fly-using-varnish/firebug_cached.png" /></li>
-<li><img src="https://fbrnc.net/user/pages/01.blog/2011/05/make-your-magento-store-fly-using-varnish/firebug_uncached.png" /></li>
+<li><img src="https://archive.fbrnc.net/user/pages/01.blog/2011/05/make-your-magento-store-fly-using-varnish/firebug_cached.png" /></li>
+<li><img src="https://archive.fbrnc.net/user/pages/01.blog/2011/05/make-your-magento-store-fly-using-varnish/firebug_uncached.png" /></li>
 </ul>
 <h3>Demo</h3>
 <p>I've set up a Magento Demo Store with Aoe_Static and Aoe_StaticDemo (which replaces the menu, the cart in the sidebar and the "recently viewed products" by placeholders) and configured Varnish: </p>
@@ -213,7 +213,7 @@
 			<div id="sidebar" class="block size-1-3 pure-u-1-3">
 				<div class="sidebar-content profile">
     <div class="profile-image">
-        <img src="https://fbrnc.net/user/themes/antimatter/images/fabrizio_polaroid.png" alt="Fabrizio Branca"/>
+        <img src="https://archive.fbrnc.net/user/themes/antimatter/images/fabrizio_polaroid.png" alt="Fabrizio Branca"/>
     </div>
     <div class="profile-content">
         <p><strong>Hi, I'm Fabrizio!</strong></p>
@@ -225,37 +225,37 @@
     <h4>Certifications</h4>
     <ul>
         <li>
-            <img src="https://fbrnc.net/user/themes/antimatter/images/cert/Solutions-Architect-Associate.png" alt="AWS Certified Solutions Architect - Associate"/>
+            <img src="https://archive.fbrnc.net/user/themes/antimatter/images/cert/Solutions-Architect-Associate.png" alt="AWS Certified Solutions Architect - Associate"/>
         </li>
         <li>
-            <img src="https://fbrnc.net/user/themes/antimatter/images/cert/Developer-Associate.png" alt="AWS Certified Developer - Associate"/>
+            <img src="https://archive.fbrnc.net/user/themes/antimatter/images/cert/Developer-Associate.png" alt="AWS Certified Developer - Associate"/>
         </li>
         <li>
-            <img src="https://fbrnc.net/user/themes/antimatter/images/cert/SysOps-Administrator-Associate.png" alt="AWS Certified SysOps Administrator - Associate"/>
+            <img src="https://archive.fbrnc.net/user/themes/antimatter/images/cert/SysOps-Administrator-Associate.png" alt="AWS Certified SysOps Administrator - Associate"/>
         </li>
         <li>
             <a href="https://magento.com/blog/magento-news/meet-2016-magento-masters-mentors">
-                <img src="https://fbrnc.net/user/themes/antimatter/images/cert/magento_master_2016.png" alt="Magento Masters 2016"/>
+                <img src="https://archive.fbrnc.net/user/themes/antimatter/images/cert/magento_master_2016.png" alt="Magento Masters 2016"/>
             </a>
         </li>
         <li>
             <a href="http://www.magentocommerce.com/certification/directory/dev/65753/">
-                <img src="https://fbrnc.net/user/themes/antimatter/images/cert/magento_certified_developer_plus.png" alt="Magento Certified Developer Plus"/>
+                <img src="https://archive.fbrnc.net/user/themes/antimatter/images/cert/magento_certified_developer_plus.png" alt="Magento Certified Developer Plus"/>
             </a>
         </li>
         <li>
             <a href="http://www.magentocommerce.com/certification/directory/dev/65753/">
-                <img src="https://fbrnc.net/user/themes/antimatter/images/cert/frontend_developer.png" alt="Magento Certified Frontend Developer"/>
+                <img src="https://archive.fbrnc.net/user/themes/antimatter/images/cert/frontend_developer.png" alt="Magento Certified Frontend Developer"/>
             </a>
         </li>
         <li>
             <a href="http://typo3.org/certification/about-the-certification/certified-typo3-cms-integrator-listing/show/branca-fabrizio/">
-                <img src="https://fbrnc.net/user/themes/antimatter/images/cert/TYPO3-Certified-Integrator-black-140.png" alt="TYPO3 Certified Integrator"/>
+                <img src="https://archive.fbrnc.net/user/themes/antimatter/images/cert/TYPO3-Certified-Integrator-black-140.png" alt="TYPO3 Certified Integrator"/>
             </a>
         </li>
         <li>
             <a href="http://www.zend.com/en/services/certification/zend-certified-engineer-directory#ClientCandidateID=ZEND009995&cid=0">
-                <img src="https://fbrnc.net/user/themes/antimatter/images/cert/php5_zce_logo_new.gif" alt="Zend Certified Engineer"/>
+                <img src="https://archive.fbrnc.net/user/themes/antimatter/images/cert/php5_zce_logo_new.gif" alt="Zend Certified Engineer"/>
             </a>
         </li>
     </ul>
@@ -264,50 +264,50 @@
     <h4>Popular Tags</h4>
     
 <span class="tags">
-                    <a class="" href="https://fbrnc.net/tag:Gallery">Gallery</a>
-                    <a class="" href="https://fbrnc.net/tag:Magento">Magento</a>
-                    <a class="" href="https://fbrnc.net/tag:Development">Development</a>
-                    <a class="" href="https://fbrnc.net/tag:TYPO3">TYPO3</a>
-                    <a class="" href="https://fbrnc.net/tag:Photography">Photography</a>
-                    <a class="" href="https://fbrnc.net/tag:Sonstiges">Sonstiges</a>
-                    <a class="" href="https://fbrnc.net/tag:30&#32;day&#32;photo&#32;challenge">30 day photo challenge</a>
-                    <a class="" href="https://fbrnc.net/tag:Pfadfinder">Pfadfinder</a>
-                    <a class="" href="https://fbrnc.net/tag:Caching">Caching</a>
-                    <a class="" href="https://fbrnc.net/tag:AWS">AWS</a>
-                    <a class="" href="https://fbrnc.net/tag:Flash/Actionscript">Flash/Actionscript</a>
-                    <a class="" href="https://fbrnc.net/tag:Portfolio">Portfolio</a>
-                    <a class="" href="https://fbrnc.net/tag:CloudFormation">CloudFormation</a>
-                    <a class="" href="https://fbrnc.net/tag:Varnish">Varnish</a>
-                    <a class="" href="https://fbrnc.net/tag:Lambda">Lambda</a>
-                    <a class="" href="https://fbrnc.net/tag:Home">Home</a>
-                    <a class="" href="https://fbrnc.net/tag:B%C3%BCcher">Bücher</a>
-                    <a class="" href="https://fbrnc.net/tag:Presentation">Presentation</a>
-                    <a class="" href="https://fbrnc.net/tag:Design">Design</a>
-                    <a class="" href="https://fbrnc.net/tag:Open&#32;Source">Open Source</a>
-                    <a class="" href="https://fbrnc.net/tag:Studium">Studium</a>
-                    <a class="" href="https://fbrnc.net/tag:Deployment">Deployment</a>
-                    <a class="" href="https://fbrnc.net/tag:OpsWorks">OpsWorks</a>
-                    <a class="" href="https://fbrnc.net/tag:Meetup">Meetup</a>
-                    <a class="" href="https://fbrnc.net/tag:KISS">KISS</a>
-                    <a class="" href="https://fbrnc.net/tag:SNS">SNS</a>
-                    <a class="" href="https://fbrnc.net/tag:Microservices">Microservices</a>
-                    <a class="" href="https://fbrnc.net/tag:Architecture">Architecture</a>
-                    <a class="" href="https://fbrnc.net/tag:Kinesis">Kinesis</a>
-                    <a class="" href="https://fbrnc.net/tag:SQS">SQS</a>
-                    <a class="" href="https://fbrnc.net/tag:Workflow">Workflow</a>
-                    <a class="" href="https://fbrnc.net/tag:JMeter">JMeter</a>
-                    <a class="" href="https://fbrnc.net/tag:Grav">Grav</a>
-                    <a class="" href="https://fbrnc.net/tag:Infrastructure&#32;as&#32;Code">Infrastructure as Code</a>
-                    <a class="" href="https://fbrnc.net/tag:DevOps">DevOps</a>
-                    <a class="" href="https://fbrnc.net/tag:Videos">Videos</a>
-                    <a class="" href="https://fbrnc.net/tag:Lightroom">Lightroom</a>
-                    <a class="" href="https://fbrnc.net/tag:Scaling">Scaling</a>
-                    <a class="" href="https://fbrnc.net/tag:Tricks">Tricks</a>
-                    <a class="" href="https://fbrnc.net/tag:MPMD">MPMD</a>
-                    <a class="" href="https://fbrnc.net/tag:Cache">Cache</a>
-                    <a class="" href="https://fbrnc.net/tag:CMS">CMS</a>
-                    <a class="" href="https://fbrnc.net/tag:Performance">Performance</a>
-                    <a class="" href="https://fbrnc.net/tag:Git">Git</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:Gallery">Gallery</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:Magento">Magento</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:Development">Development</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:TYPO3">TYPO3</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:Photography">Photography</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:Sonstiges">Sonstiges</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:30&#32;day&#32;photo&#32;challenge">30 day photo challenge</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:Pfadfinder">Pfadfinder</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:Caching">Caching</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:AWS">AWS</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:Flash/Actionscript">Flash/Actionscript</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:Portfolio">Portfolio</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:CloudFormation">CloudFormation</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:Varnish">Varnish</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:Lambda">Lambda</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:Home">Home</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:B%C3%BCcher">Bücher</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:Presentation">Presentation</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:Design">Design</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:Open&#32;Source">Open Source</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:Studium">Studium</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:Deployment">Deployment</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:OpsWorks">OpsWorks</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:Meetup">Meetup</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:KISS">KISS</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:SNS">SNS</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:Microservices">Microservices</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:Architecture">Architecture</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:Kinesis">Kinesis</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:SQS">SQS</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:Workflow">Workflow</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:JMeter">JMeter</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:Grav">Grav</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:Infrastructure&#32;as&#32;Code">Infrastructure as Code</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:DevOps">DevOps</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:Videos">Videos</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:Lightroom">Lightroom</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:Scaling">Scaling</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:Tricks">Tricks</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:MPMD">MPMD</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:Cache">Cache</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:CMS">CMS</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:Performance">Performance</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:Git">Git</a>
     </span>
 </div>
 <div class="sidebar-content sidebar-archives">
@@ -318,19 +318,19 @@
                     </ul><ul class="archives">
         <li class="caption">2016</li>
         <li>
-        <a href="https://fbrnc.net/month:may_2016" title="May 2016">
+        <a href="https://archive.fbrnc.net/month:may_2016" title="May 2016">
                 <span class="label">1</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:mar_2016" title="March 2016">
+        <a href="https://archive.fbrnc.net/month:mar_2016" title="March 2016">
                 <span class="label">3</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:jan_2016" title="January 2016">
+        <a href="https://archive.fbrnc.net/month:jan_2016" title="January 2016">
                 <span class="label">1</span>
                 </a>
     </li>
@@ -338,19 +338,19 @@
                     </ul><ul class="archives">
         <li class="caption">2015</li>
         <li>
-        <a href="https://fbrnc.net/month:oct_2015" title="October 2015">
+        <a href="https://archive.fbrnc.net/month:oct_2015" title="October 2015">
                 <span class="label">3</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:jun_2015" title="June 2015">
+        <a href="https://archive.fbrnc.net/month:jun_2015" title="June 2015">
                 <span class="label">1</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:apr_2015" title="April 2015">
+        <a href="https://archive.fbrnc.net/month:apr_2015" title="April 2015">
                 <span class="label">1</span>
                 </a>
     </li>
@@ -358,31 +358,31 @@
                     </ul><ul class="archives">
         <li class="caption">2014</li>
         <li>
-        <a href="https://fbrnc.net/month:dec_2014" title="December 2014">
+        <a href="https://archive.fbrnc.net/month:dec_2014" title="December 2014">
                 <span class="label">5</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:nov_2014" title="November 2014">
+        <a href="https://archive.fbrnc.net/month:nov_2014" title="November 2014">
                 <span class="label">4</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:may_2014" title="May 2014">
+        <a href="https://archive.fbrnc.net/month:may_2014" title="May 2014">
                 <span class="label">1</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:mar_2014" title="March 2014">
+        <a href="https://archive.fbrnc.net/month:mar_2014" title="March 2014">
                 <span class="label">4</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:feb_2014" title="February 2014">
+        <a href="https://archive.fbrnc.net/month:feb_2014" title="February 2014">
                 <span class="label">1</span>
                 </a>
     </li>
@@ -390,43 +390,43 @@
                     </ul><ul class="archives">
         <li class="caption">2013</li>
         <li>
-        <a href="https://fbrnc.net/month:dec_2013" title="December 2013">
+        <a href="https://archive.fbrnc.net/month:dec_2013" title="December 2013">
                 <span class="label">2</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:aug_2013" title="August 2013">
+        <a href="https://archive.fbrnc.net/month:aug_2013" title="August 2013">
                 <span class="label">3</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:jul_2013" title="July 2013">
+        <a href="https://archive.fbrnc.net/month:jul_2013" title="July 2013">
                 <span class="label">2</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:may_2013" title="May 2013">
+        <a href="https://archive.fbrnc.net/month:may_2013" title="May 2013">
                 <span class="label">1</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:apr_2013" title="April 2013">
+        <a href="https://archive.fbrnc.net/month:apr_2013" title="April 2013">
                 <span class="label">10</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:mar_2013" title="March 2013">
+        <a href="https://archive.fbrnc.net/month:mar_2013" title="March 2013">
                 <span class="label">4</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:feb_2013" title="February 2013">
+        <a href="https://archive.fbrnc.net/month:feb_2013" title="February 2013">
                 <span class="label">4</span>
                 </a>
     </li>
@@ -434,67 +434,67 @@
                     </ul><ul class="archives">
         <li class="caption">2012</li>
         <li>
-        <a href="https://fbrnc.net/month:dec_2012" title="December 2012">
+        <a href="https://archive.fbrnc.net/month:dec_2012" title="December 2012">
                 <span class="label">1</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:nov_2012" title="November 2012">
+        <a href="https://archive.fbrnc.net/month:nov_2012" title="November 2012">
                 <span class="label">2</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:oct_2012" title="October 2012">
+        <a href="https://archive.fbrnc.net/month:oct_2012" title="October 2012">
                 <span class="label">1</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:sep_2012" title="September 2012">
+        <a href="https://archive.fbrnc.net/month:sep_2012" title="September 2012">
                 <span class="label">4</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:aug_2012" title="August 2012">
+        <a href="https://archive.fbrnc.net/month:aug_2012" title="August 2012">
                 <span class="label">7</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:jul_2012" title="July 2012">
+        <a href="https://archive.fbrnc.net/month:jul_2012" title="July 2012">
                 <span class="label">4</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:jun_2012" title="June 2012">
+        <a href="https://archive.fbrnc.net/month:jun_2012" title="June 2012">
                 <span class="label">1</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:may_2012" title="May 2012">
+        <a href="https://archive.fbrnc.net/month:may_2012" title="May 2012">
                 <span class="label">1</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:apr_2012" title="April 2012">
+        <a href="https://archive.fbrnc.net/month:apr_2012" title="April 2012">
                 <span class="label">3</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:mar_2012" title="March 2012">
+        <a href="https://archive.fbrnc.net/month:mar_2012" title="March 2012">
                 <span class="label">4</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:feb_2012" title="February 2012">
+        <a href="https://archive.fbrnc.net/month:feb_2012" title="February 2012">
                 <span class="label">4</span>
                 </a>
     </li>
@@ -502,67 +502,67 @@
                     </ul><ul class="archives">
         <li class="caption">2011</li>
         <li>
-        <a href="https://fbrnc.net/month:dec_2011" title="December 2011">
+        <a href="https://archive.fbrnc.net/month:dec_2011" title="December 2011">
                 <span class="label">1</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:nov_2011" title="November 2011">
+        <a href="https://archive.fbrnc.net/month:nov_2011" title="November 2011">
                 <span class="label">3</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:oct_2011" title="October 2011">
+        <a href="https://archive.fbrnc.net/month:oct_2011" title="October 2011">
                 <span class="label">3</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:sep_2011" title="September 2011">
+        <a href="https://archive.fbrnc.net/month:sep_2011" title="September 2011">
                 <span class="label">17</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:aug_2011" title="August 2011">
+        <a href="https://archive.fbrnc.net/month:aug_2011" title="August 2011">
                 <span class="label">26</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:jul_2011" title="July 2011">
+        <a href="https://archive.fbrnc.net/month:jul_2011" title="July 2011">
                 <span class="label">3</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:jun_2011" title="June 2011">
+        <a href="https://archive.fbrnc.net/month:jun_2011" title="June 2011">
                 <span class="label">4</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:may_2011" title="May 2011">
+        <a href="https://archive.fbrnc.net/month:may_2011" title="May 2011">
                 <span class="label">9</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:apr_2011" title="April 2011">
+        <a href="https://archive.fbrnc.net/month:apr_2011" title="April 2011">
                 <span class="label">2</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:mar_2011" title="March 2011">
+        <a href="https://archive.fbrnc.net/month:mar_2011" title="March 2011">
                 <span class="label">3</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:feb_2011" title="February 2011">
+        <a href="https://archive.fbrnc.net/month:feb_2011" title="February 2011">
                 <span class="label">9</span>
                 </a>
     </li>
@@ -570,49 +570,49 @@
                     </ul><ul class="archives">
         <li class="caption">2010</li>
         <li>
-        <a href="https://fbrnc.net/month:dec_2010" title="December 2010">
+        <a href="https://archive.fbrnc.net/month:dec_2010" title="December 2010">
                 <span class="label">1</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:oct_2010" title="October 2010">
+        <a href="https://archive.fbrnc.net/month:oct_2010" title="October 2010">
                 <span class="label">2</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:aug_2010" title="August 2010">
+        <a href="https://archive.fbrnc.net/month:aug_2010" title="August 2010">
                 <span class="label">2</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:jul_2010" title="July 2010">
+        <a href="https://archive.fbrnc.net/month:jul_2010" title="July 2010">
                 <span class="label">6</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:jun_2010" title="June 2010">
+        <a href="https://archive.fbrnc.net/month:jun_2010" title="June 2010">
                 <span class="label">1</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:apr_2010" title="April 2010">
+        <a href="https://archive.fbrnc.net/month:apr_2010" title="April 2010">
                 <span class="label">3</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:mar_2010" title="March 2010">
+        <a href="https://archive.fbrnc.net/month:mar_2010" title="March 2010">
                 <span class="label">4</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:feb_2010" title="February 2010">
+        <a href="https://archive.fbrnc.net/month:feb_2010" title="February 2010">
                 <span class="label">1</span>
                 </a>
     </li>
@@ -620,61 +620,61 @@
                     </ul><ul class="archives">
         <li class="caption">2009</li>
         <li>
-        <a href="https://fbrnc.net/month:dec_2009" title="December 2009">
+        <a href="https://archive.fbrnc.net/month:dec_2009" title="December 2009">
                 <span class="label">7</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:nov_2009" title="November 2009">
+        <a href="https://archive.fbrnc.net/month:nov_2009" title="November 2009">
                 <span class="label">2</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:oct_2009" title="October 2009">
+        <a href="https://archive.fbrnc.net/month:oct_2009" title="October 2009">
                 <span class="label">3</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:sep_2009" title="September 2009">
+        <a href="https://archive.fbrnc.net/month:sep_2009" title="September 2009">
                 <span class="label">6</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:aug_2009" title="August 2009">
+        <a href="https://archive.fbrnc.net/month:aug_2009" title="August 2009">
                 <span class="label">1</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:jul_2009" title="July 2009">
+        <a href="https://archive.fbrnc.net/month:jul_2009" title="July 2009">
                 <span class="label">3</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:jun_2009" title="June 2009">
+        <a href="https://archive.fbrnc.net/month:jun_2009" title="June 2009">
                 <span class="label">5</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:may_2009" title="May 2009">
+        <a href="https://archive.fbrnc.net/month:may_2009" title="May 2009">
                 <span class="label">1</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:feb_2009" title="February 2009">
+        <a href="https://archive.fbrnc.net/month:feb_2009" title="February 2009">
                 <span class="label">2</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:jan_2009" title="January 2009">
+        <a href="https://archive.fbrnc.net/month:jan_2009" title="January 2009">
                 <span class="label">5</span>
                 </a>
     </li>
@@ -682,49 +682,49 @@
                     </ul><ul class="archives">
         <li class="caption">2008</li>
         <li>
-        <a href="https://fbrnc.net/month:dec_2008" title="December 2008">
+        <a href="https://archive.fbrnc.net/month:dec_2008" title="December 2008">
                 <span class="label">1</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:nov_2008" title="November 2008">
+        <a href="https://archive.fbrnc.net/month:nov_2008" title="November 2008">
                 <span class="label">11</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:aug_2008" title="August 2008">
+        <a href="https://archive.fbrnc.net/month:aug_2008" title="August 2008">
                 <span class="label">2</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:may_2008" title="May 2008">
+        <a href="https://archive.fbrnc.net/month:may_2008" title="May 2008">
                 <span class="label">4</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:apr_2008" title="April 2008">
+        <a href="https://archive.fbrnc.net/month:apr_2008" title="April 2008">
                 <span class="label">4</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:mar_2008" title="March 2008">
+        <a href="https://archive.fbrnc.net/month:mar_2008" title="March 2008">
                 <span class="label">2</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:feb_2008" title="February 2008">
+        <a href="https://archive.fbrnc.net/month:feb_2008" title="February 2008">
                 <span class="label">7</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:jan_2008" title="January 2008">
+        <a href="https://archive.fbrnc.net/month:jan_2008" title="January 2008">
                 <span class="label">10</span>
                 </a>
     </li>
@@ -732,49 +732,49 @@
                     </ul><ul class="archives">
         <li class="caption">2007</li>
         <li>
-        <a href="https://fbrnc.net/month:dec_2007" title="December 2007">
+        <a href="https://archive.fbrnc.net/month:dec_2007" title="December 2007">
                 <span class="label">25</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:nov_2007" title="November 2007">
+        <a href="https://archive.fbrnc.net/month:nov_2007" title="November 2007">
                 <span class="label">2</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:oct_2007" title="October 2007">
+        <a href="https://archive.fbrnc.net/month:oct_2007" title="October 2007">
                 <span class="label">2</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:sep_2007" title="September 2007">
+        <a href="https://archive.fbrnc.net/month:sep_2007" title="September 2007">
                 <span class="label">2</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:jun_2007" title="June 2007">
+        <a href="https://archive.fbrnc.net/month:jun_2007" title="June 2007">
                 <span class="label">4</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:may_2007" title="May 2007">
+        <a href="https://archive.fbrnc.net/month:may_2007" title="May 2007">
                 <span class="label">1</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:feb_2007" title="February 2007">
+        <a href="https://archive.fbrnc.net/month:feb_2007" title="February 2007">
                 <span class="label">2</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:jan_2007" title="January 2007">
+        <a href="https://archive.fbrnc.net/month:jan_2007" title="January 2007">
                 <span class="label">7</span>
                 </a>
     </li>
@@ -782,25 +782,25 @@
                     </ul><ul class="archives">
         <li class="caption">2006</li>
         <li>
-        <a href="https://fbrnc.net/month:dec_2006" title="December 2006">
+        <a href="https://archive.fbrnc.net/month:dec_2006" title="December 2006">
                 <span class="label">5</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:nov_2006" title="November 2006">
+        <a href="https://archive.fbrnc.net/month:nov_2006" title="November 2006">
                 <span class="label">14</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:oct_2006" title="October 2006">
+        <a href="https://archive.fbrnc.net/month:oct_2006" title="October 2006">
                 <span class="label">9</span>
                 </a>
     </li>
 
         <li>
-        <a href="https://fbrnc.net/month:sep_2006" title="September 2006">
+        <a href="https://archive.fbrnc.net/month:sep_2006" title="September 2006">
                 <span class="label">7</span>
                 </a>
     </li>
@@ -818,9 +818,9 @@
             </div>
             <p>Powered by <a href="http://getgrav.org">Grav</a>.</p>
             <p>
-                <a href="https://fbrnc.net/blog.atom"><i class="fa fa-rss-square"></i> Atom 1.0</a> |
-                <a href="https://fbrnc.net/blog.rss"><i class="fa fa-rss-square"></i> RSS</a> |
-                <a href="https://fbrnc.net/sitemap">Sitemap</a>
+                <a href="https://archive.fbrnc.net/blog.atom"><i class="fa fa-rss-square"></i> Atom 1.0</a> |
+                <a href="https://archive.fbrnc.net/blog.rss"><i class="fa fa-rss-square"></i> RSS</a> |
+                <a href="https://archive.fbrnc.net/sitemap">Sitemap</a>
             </p>
         </footer>
             </div>
@@ -829,17 +829,17 @@
         
 <ul class="navigation">
                                     <li class="active">
-                <a href="https://fbrnc.net/">
+                <a href="https://archive.fbrnc.net/">
                                         Blog
                 </a>
             </li>
                                 <li class="">
-                <a href="https://fbrnc.net/privacy-policy">
+                <a href="https://archive.fbrnc.net/privacy-policy">
                                         Privacy Policy
                 </a>
             </li>
                                 <li class="">
-                <a href="https://fbrnc.net/contact">
+                <a href="https://archive.fbrnc.net/contact">
                                         Contact
                 </a>
             </li>

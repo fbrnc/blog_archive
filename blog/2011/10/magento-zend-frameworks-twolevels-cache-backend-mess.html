@@ -7,7 +7,7 @@
     <meta name="generator" content="GravCMS" />
 <meta name="description" content="Web Development" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <link rel="icon" type="image/png" href="http://fbrnc.net/user/themes/antimatter/images/favicon.png" />
+    <link rel="icon" type="image/png" href="https://archive.fbrnc.net/user/themes/antimatter/images/favicon.png" />
     <link rel="canonical" href="magento-zend-frameworks-twolevels-cache-backend-mess.html" />
 
                                                             
@@ -56,9 +56,9 @@
 <div id="breadcrumbs" itemscope itemtype="http://data-vocabulary.org/Breadcrumb">
                             <a href="../../../index.html" itemprop="url"><span itemprop="title">Blog</span></a>
             <i class="fa fa-angle-right"></i>
-                                <a href="http://fbrnc.net/blog/2011" itemprop="url"><span itemprop="title">2011</span></a>
+                                <a href="https://archive.fbrnc.net/blog/2011" itemprop="url"><span itemprop="title">2011</span></a>
             <i class="fa fa-angle-right"></i>
-                                <a href="http://fbrnc.net/blog/2011/10" itemprop="url"><span itemprop="title">10</span></a>
+                                <a href="https://archive.fbrnc.net/blog/2011/10" itemprop="url"><span itemprop="title">10</span></a>
             <i class="fa fa-angle-right"></i>
                                                 <span itemprop="title">Magento / Zend Framework's TwoLevels Cache Backend Mess</span>
                         </div>
@@ -84,13 +84,13 @@
     <div class="list-blog-padding">
             <p><h3>Table of content</h3>
 <ul>
-<li><a href="http://fbrnc.net/posts/2011/10/magento-zend-frameworks-twolevels-cache-backend-mess.html#tt_content_1444">Basics</a></li>
-<li><a href="http://fbrnc.net/posts/2011/10/magento-zend-frameworks-twolevels-cache-backend-mess.html#tt_content_1445">Two-Level Caching</a></li>
-<li><a href="http://fbrnc.net/posts/2011/10/magento-zend-frameworks-twolevels-cache-backend-mess.html#tt_content_1448">Problem: Priorities</a></li>
-<li><a href="http://fbrnc.net/posts/2011/10/magento-zend-frameworks-twolevels-cache-backend-mess.html#tt_content_1454">Problem: First-level cache is not refreshed correctly</a></li>
-<li><a href="http://fbrnc.net/posts/2011/10/magento-zend-frameworks-twolevels-cache-backend-mess.html#tt_content_1459">Problem: Hardcoded first-level cache classes</a></li>
-<li><a href="http://fbrnc.net/posts/2011/10/magento-zend-frameworks-twolevels-cache-backend-mess.html#tt_content_1460">Related posts</a></li>
-<li><a href="http://fbrnc.net/posts/2011/10/magento-zend-frameworks-twolevels-cache-backend-mess.html#tt_content_1461">Further reading</a></li>
+<li><a href="https://archive.fbrnc.net/posts/2011/10/magento-zend-frameworks-twolevels-cache-backend-mess.html#tt_content_1444">Basics</a></li>
+<li><a href="https://archive.fbrnc.net/posts/2011/10/magento-zend-frameworks-twolevels-cache-backend-mess.html#tt_content_1445">Two-Level Caching</a></li>
+<li><a href="https://archive.fbrnc.net/posts/2011/10/magento-zend-frameworks-twolevels-cache-backend-mess.html#tt_content_1448">Problem: Priorities</a></li>
+<li><a href="https://archive.fbrnc.net/posts/2011/10/magento-zend-frameworks-twolevels-cache-backend-mess.html#tt_content_1454">Problem: First-level cache is not refreshed correctly</a></li>
+<li><a href="https://archive.fbrnc.net/posts/2011/10/magento-zend-frameworks-twolevels-cache-backend-mess.html#tt_content_1459">Problem: Hardcoded first-level cache classes</a></li>
+<li><a href="https://archive.fbrnc.net/posts/2011/10/magento-zend-frameworks-twolevels-cache-backend-mess.html#tt_content_1460">Related posts</a></li>
+<li><a href="https://archive.fbrnc.net/posts/2011/10/magento-zend-frameworks-twolevels-cache-backend-mess.html#tt_content_1461">Further reading</a></li>
 </ul>
 <h3>Basics</h3>
 <p>You might want to read <a href="../../../magento-caching-internals.html">my blog post about caching internals</a> to understand how the different classes are related to each other and what function they have. In addition the ZF's classes, Magento comes with some extra classes (_Varien_Cache<em>Core</em>, _Mage_Core_Model<em>Cache</em> and two cache backend implementations for <a href="../../../magentos-database-cache-backend-mess.html">database caching</a> and <a href="http://eaccelerator.net/">eaccelerator</a>). The TwoLevels cache backend is part of ZF.</p>
@@ -146,11 +146,11 @@
     }
     return $fastLifetime;
 }</code></pre>
-<p>See section "<a href="http://fbrnc.net/posts/2011/10/magento-zend-frameworks-twolevels-cache-backend-mess.html#c1454">Problem: First level cached is not refreshed correctly</a>"  why this actually is a big problem. </p>
+<p>See section "<a href="https://archive.fbrnc.net/posts/2011/10/magento-zend-frameworks-twolevels-cache-backend-mess.html#c1454">Problem: First level cached is not refreshed correctly</a>"  why this actually is a big problem. </p>
 <p>I've created a patch </p>
 <ol>
 <li>that enables the priority setting of the TwoLevels cache regardless of the used backends (because priority usage has nothing to do capabilities of the backends in this case)</li>
-<li>that makes the default priority configurable in Magento. If you don't want to have shorter lifetimes you need to set this parameter to 10. Decreasing this value will shorten the first level cache lifetime. Unless you really know what you want and unless you have the auto_refreshing (see <a href="http://fbrnc.net/posts/2011/10/magento-zend-frameworks-twolevels-cache-backend-mess.html#c1454">below</a>) fixed you probably want this set to 10 in your Magento instance. For backwards compability reason it defaults to "8" in my patch.</li>
+<li>that makes the default priority configurable in Magento. If you don't want to have shorter lifetimes you need to set this parameter to 10. Decreasing this value will shorten the first level cache lifetime. Unless you really know what you want and unless you have the auto_refreshing (see <a href="https://archive.fbrnc.net/posts/2011/10/magento-zend-frameworks-twolevels-cache-backend-mess.html#c1454">below</a>) fixed you probably want this set to 10 in your Magento instance. For backwards compability reason it defaults to "8" in my patch.</li>
 </ol>
 <p><strong><a href="https://gist.github.com/1262502">Find my patch here.</a></strong></p>
 <p>Configuration can be done in the cache section of your local.xml file:</p>
@@ -166,13 +166,13 @@
     &lt;/global&gt;
 &lt;/config&gt;</code></pre>
 <h3>Problem: First-level cache is not refreshed correctly</h3>
-<p>Zend Framework's TwoLevels cache has a problem with refreshing data in the first level cache. If you always have the same lifetimes for the first level and the second level this is no problem for you, but if you haven't already fixed the bug in the <a href="http://fbrnc.net/posts/2011/10/magento-zend-frameworks-twolevels-cache-backend-mess.html#c1448">section above</a> the first level lifetime is always one third and won't be refreshed until the data expires in the slow backend. Check the statistics in my <a href="../../../magento-two-level-caching.html">previous blog post on this topic</a> and this statistics for some demonstration of the bug resulting in bad cache efficiency:</p>
+<p>Zend Framework's TwoLevels cache has a problem with refreshing data in the first level cache. If you always have the same lifetimes for the first level and the second level this is no problem for you, but if you haven't already fixed the bug in the <a href="https://archive.fbrnc.net/posts/2011/10/magento-zend-frameworks-twolevels-cache-backend-mess.html#c1448">section above</a> the first level lifetime is always one third and won't be refreshed until the data expires in the slow backend. Check the statistics in my <a href="../../../magento-two-level-caching.html">previous blog post on this topic</a> and this statistics for some demonstration of the bug resulting in bad cache efficiency:</p>
 <p><img src="../../../user/pages/01.blog/2011/10/magento-zend-frameworks-twolevels-cache-backend-mess/bug.jpg" />
 First level cache misses after 1/3rd of time  </p>
 <p><img src="../../../user/pages/01.blog/2011/10/magento-zend-frameworks-twolevels-cache-backend-mess/fixed.jpg" />
 First level cache hits with priority = 10</p>
 <p>There's a simple way around this bug: <strong>Enabling auto refreshing</strong>. But auto refreshing is buggy aswell. Auto refreshing will rewrite data in the first level cache on every read. Writing usually is much slower and in most cases totally useless. So there is no reason to enable this feature unless your shop is too fast and you want to slow it down intentionally. Besides that it won't be possible the gather hit statistics because all data will be reinserted after each hit resulting the hit count to always be "1".  You can see that in apc-info. Hit statistics data might be used be some cache implementation to decide which entries to dismiss on full caches. </p>
-<p>The reason this feature probably was created for is to write data back into the first level cache if it was not found there, but found in the second level cache. (That's how two-level caching is supposed to work. <a href="http://fbrnc.net/posts/2011/10/magento-zend-frameworks-twolevels-cache-backend-mess.html#c1446">See diagram above</a>.). But current auto refresh implementation does not work this way. <a href="http://framework.zend.com/issues/browse/ZF-8431">This was already reported (including a simple patch)</a>, but sadly wasn't included to ZF and Magento yet. Applying this patch works fine and will allow you to have firs-level caches with shorter lifetimes that will refresh their data from second level after being expired on next hit. Calculating new lifetimes in this patch is not taken into account. That means if the first level is refreshed shortly before the second level expires data may stay in first level a little longer as expected. But this shouldn't be a big deal and still way better than not using the fast cache at all after its lifetime has expired.</p>
+<p>The reason this feature probably was created for is to write data back into the first level cache if it was not found there, but found in the second level cache. (That's how two-level caching is supposed to work. <a href="https://archive.fbrnc.net/posts/2011/10/magento-zend-frameworks-twolevels-cache-backend-mess.html#c1446">See diagram above</a>.). But current auto refresh implementation does not work this way. <a href="http://framework.zend.com/issues/browse/ZF-8431">This was already reported (including a simple patch)</a>, but sadly wasn't included to ZF and Magento yet. Applying this patch works fine and will allow you to have firs-level caches with shorter lifetimes that will refresh their data from second level after being expired on next hit. Calculating new lifetimes in this patch is not taken into account. That means if the first level is refreshed shortly before the second level expires data may stay in first level a little longer as expected. But this shouldn't be a big deal and still way better than not using the fast cache at all after its lifetime has expired.</p>
 <p>Also check following reported bugs that affect the TwoLevel cache (some of them have been applied to the TwoLevels cache in the meantime, others aren't):</p>
 <ul>
 <li><a href="http://framework.zend.com/issues/browse/ZF-7972">Zend_Cache_Backend_TwoLevels auto_refresh_fast_cache off and priority lower than 10 causes inconsistencies</a></li>
@@ -298,7 +298,7 @@ First level cache hits with priority = 10</p>
                     <a class="" href="../../../tag%253APfadfinder.html">Pfadfinder</a>
                     <a class="" href="../../../tag%253ACaching.html">Caching</a>
                     <a class="" href="../../../tag%253AAWS.html">AWS</a>
-                    <a class="" href="http://fbrnc.net/tag:Flash/Actionscript">Flash/Actionscript</a>
+                    <a class="" href="https://archive.fbrnc.net/tag:Flash/Actionscript">Flash/Actionscript</a>
                     <a class="" href="../../../tag%253APortfolio.html">Portfolio</a>
                     <a class="" href="../../../tag%253ACloudFormation.html">CloudFormation</a>
                     <a class="" href="../../../tag%253AVarnish.html">Varnish</a>
@@ -844,7 +844,7 @@ First level cache hits with priority = 10</p>
             <p>
                 <a href="../../../blog.atom.html"><i class="fa fa-rss-square"></i> Atom 1.0</a> |
                 <a href="../../../blog.rss.html"><i class="fa fa-rss-square"></i> RSS</a> |
-                <a href="http://fbrnc.net/sitemap">Sitemap</a>
+                <a href="https://archive.fbrnc.net/sitemap">Sitemap</a>
             </p>
         </footer>
             </div>
